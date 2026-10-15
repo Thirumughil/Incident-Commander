@@ -110,6 +110,38 @@ class AgentFlowTests(unittest.TestCase):
         self.assertEqual(opened[0]["severity"], "sev1")
         self.assertEqual(self.t.open_tasks("Analyzer")[0]["incident"], opened[0]["incident"])
         self.assertEqual(FakeTools.findings_store[0]["agent"], "Detector")
+	
+
+    def test_detector_ignores_components_without_open_alerts(self):
+        self.t.group_alerts = lambda: [
+            dict(componentId=1, alerts=["STALE-1"]),
+            dict(componentId=2, alerts=[]),
+        ]
+
+        opened = Detector(self.t).run()
+
+        self.assertEqual(opened, [])
+        self.assertFalse(any(call[0] == "open_incident" for call in self.t.calls))
+        self.assertEqual(self.t.tasks, [])
+
+
+    def test_detector_uses_only_open_alerts_in_component(self):
+        self.t.group_alerts = lambda: [
+            dict(componentId=1, alerts=["A1", "STALE-1", "A2"])
+        ]
+
+        opened = Detector(self.t).run()
+
+        self.assertEqual(len(opened), 1)
+        self.assertEqual(opened[0]["alerts"], 2)
+
+        incident_calls = [
+            call for call in self.t.calls
+            if call[0] == "open_incident"
+        ]
+        self.assertEqual(len(incident_calls), 1)
+        self.assertEqual(incident_calls[0][1][2], ("A1", "A2"))
+
 
     def test_full_pipeline_decisions(self):
         opened, analyzed, responded = self.run_all()
