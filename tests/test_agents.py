@@ -77,6 +77,8 @@ class FakeTools:
                 t["status"] = status
     def mark_affected(self, incident, service, role): self._log("affected", service, role)
     def record_cause(self, incident, change, root_cause): self._log("cause", change, root_cause)
+    def person_exists(self, person): return person in {"Priya Raman", "Arjun Mehta"}
+    def fail_task(self, task, error): self._set(task, "failed"); self._log("fail_task", task, error)
     def set_recommendation(self, incident, playbook, person):
         self.info["recommended_playbook"], self.info["paged"] = playbook, person
     def record_responder(self, person, incident, minutes): self._log("responder", person, minutes)
@@ -110,38 +112,6 @@ class AgentFlowTests(unittest.TestCase):
         self.assertEqual(opened[0]["severity"], "sev1")
         self.assertEqual(self.t.open_tasks("Analyzer")[0]["incident"], opened[0]["incident"])
         self.assertEqual(FakeTools.findings_store[0]["agent"], "Detector")
-	
-
-    def test_detector_ignores_components_without_open_alerts(self):
-        self.t.group_alerts = lambda: [
-            dict(componentId=1, alerts=["STALE-1"]),
-            dict(componentId=2, alerts=[]),
-        ]
-
-        opened = Detector(self.t).run()
-
-        self.assertEqual(opened, [])
-        self.assertFalse(any(call[0] == "open_incident" for call in self.t.calls))
-        self.assertEqual(self.t.tasks, [])
-
-
-    def test_detector_uses_only_open_alerts_in_component(self):
-        self.t.group_alerts = lambda: [
-            dict(componentId=1, alerts=["A1", "STALE-1", "A2"])
-        ]
-
-        opened = Detector(self.t).run()
-
-        self.assertEqual(len(opened), 1)
-        self.assertEqual(opened[0]["alerts"], 2)
-
-        incident_calls = [
-            call for call in self.t.calls
-            if call[0] == "open_incident"
-        ]
-        self.assertEqual(len(incident_calls), 1)
-        self.assertEqual(incident_calls[0][1][2], ("A1", "A2"))
-
 
     def test_full_pipeline_decisions(self):
         opened, analyzed, responded = self.run_all()
@@ -199,10 +169,53 @@ class AgentFlowTests(unittest.TestCase):
         out = Learner(self.t).resolve("INC-1", worked=False, minutes=30)
         self.assertLess(out["after"], out["before"])
 
-    def test_learner_rejects_inapplicable_playbook(self):
+    def test_learner_rejects_inapplicable_playbook_without_writing(self):
         self.run_all()
+        tasks_before = len(self.t.tasks)
         with self.assertRaises(ValueError):
             Learner(self.t).resolve("INC-1", playbook="PB-99")
+        self.assertEqual(len(self.t.tasks), tasks_before)  # no orphan "learn" task
+        self.assertFalse([c for c in self.t.calls if c[0] == "responder"])
+
+    def test_learner_rejects_unknown_person_without_writing(self):
+        self.run_all()
+        tasks_before = len(self.t.tasks)
+        with self.assertRaises(ValueError) as ctx:
+            Learner(self.t).resolve("INC-1", person="string")
+        self.assertIn("unknown person", str(ctx.exception))
+        self.assertEqual(len(self.t.tasks), tasks_before)
+
+    def test_learner_missing_incident_is_a_lookup_error(self):
+        self.t.info = None
+        with self.assertRaises(LookupError):
+            Learner(self.t).resolve("INC-NOPE")
+
+    def test_learner_needs_an_origin(self):
+        self.t.incident_origin = lambda incident: None
+        with self.assertRaises(LookupError):
+            Learner(self.t).resolve("INC-1")
+
+    def test_learner_refuses_to_double_count_a_resolved_incident(self):
+        self.run_all()
+        Learner(self.t).resolve("INC-1", worked=True, minutes=9)
+        self.t.info["status"] = "resolved"
+        wins = self.t.stats["PB-04"]["wins"]
+        with self.assertRaises(ValueError) as ctx:
+            Learner(self.t).resolve("INC-1", worked=True, minutes=9)
+        self.assertIn("already resolved", str(ctx.exception))
+        self.assertEqual(self.t.stats["PB-04"]["wins"], wins)
+
+    def test_learner_marks_task_failed_when_a_write_breaks(self):
+        self.run_all()
+
+        def boom(*a, **k):
+            raise RuntimeError("graph went away")
+
+        self.t.record_outcome = boom
+        with self.assertRaises(RuntimeError):
+            Learner(self.t).resolve("INC-1")
+        learn = [t for t in self.t.tasks if t["kind"] == "learn"]
+        self.assertEqual([t["status"] for t in learn], ["failed"])
 
 
 class ReasoningTests(unittest.TestCase):

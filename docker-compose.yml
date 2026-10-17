@@ -6,6 +6,9 @@ services:
       - "6380:6379"   # FalkorDB (Redis protocol), host port 6380 to avoid clashing with other local instances
       - "3001:3000"   # FalkorDB Browser UI on http://localhost:3001
     environment:
+      # AOF persistence: without it, writes since the last periodic snapshot are lost when the
+      # container or Docker restarts (recent incidents vanish). See the FalkorDB Docker docs.
+      - REDIS_ARGS=--appendonly yes --appendfsync everysec
       - FALKORDB_ARGS=THREAD_COUNT 4
     volumes:
       - falkordb_data:/data

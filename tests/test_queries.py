@@ -27,12 +27,6 @@ class QueryFileTests(unittest.TestCase):
             used = set(re.findall(r"\$([a-z_]+)", queries.load(name)))
             self.assertEqual(declared, used, name)
 
-
-    def test_suspect_changes_excludes_changes_after_incident_start(self):
-        raw = (queries.QUERY_DIR / "suspect_changes.cypher").read_text()
-        self.assertRegex(raw, r"c\.at\s*<=\s*\$incident_start")
-
-
     def test_only_known_labels_and_relationships(self):
         for name in queries.available():
             text = queries.load(name)

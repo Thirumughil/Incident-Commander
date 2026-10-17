@@ -1,1 +1,5 @@
 falkordb>=1.0.0
+fastapi>=0.110
+uvicorn>=0.29
+# optional: lets a model rewrite the Responder's status update (the graph still makes every decision)
+# anthropic>=0.40

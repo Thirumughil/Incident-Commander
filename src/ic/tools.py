@@ -21,6 +21,16 @@ class Tools:
     def __init__(self, graph, clock=time.time):
         self.g = graph
         self.clock = clock
+        self._last = 0.0
+
+    def _now(self):
+        """Strictly increasing timestamps: on Windows the clock ticks about every 15 ms, so
+        findings written back to back would otherwise share a time and lose their order."""
+        t = float(self.clock())
+        if t <= self._last:
+            t = self._last + 1e-6
+        self._last = t
+        return t
 
     def _q(self, name, **params):
         return queries.run(self.g, name, **params)
@@ -77,6 +87,42 @@ class Tools:
     def findings(self, incident):
         return self._q("incident_findings", incident=incident)
 
+    def incident_list(self):
+        return self._q("incident_list")
+
+    def incident_cause(self, incident):
+        rows = self._q("incident_cause", incident=incident)
+        return rows[0] if rows else None
+
+    def finding_evidence(self, incident):
+        return self._q("finding_evidence", incident=incident)
+
+    def incident_tasks(self, incident):
+        return self._q("incident_tasks", incident=incident)
+
+    def subgraph_edges(self, names):
+        return self._q("subgraph_edges", names=sorted(set(names)))
+
+    def incident_outcome(self, incident):
+        return self._q("incident_outcome", incident=incident)
+
+    def person_exists(self, person):
+        return bool(self._q("person_exists", person=person))
+
+    def service_info(self, service):
+        rows = self._q("service_info", service=service)
+        return rows[0] if rows else None
+
+    def service_experts(self, service):
+        return self._q("service_experts", service=service)
+
+    def service_incidents(self, service):
+        return self._q("service_incidents", service=service)
+
+    def service_neighbors(self, service):
+        rows = self._q("service_neighbors", service=service)
+        return rows[0] if rows else dict(depends_on=[], dependents=[])
+
     # ---- writes ------------------------------------------------------------
     def link_related_alerts(self):
         self._q("link_related_alerts")
@@ -90,14 +136,17 @@ class Tools:
 
     def create_task(self, incident, agent, kind):
         task = f"TSK-{uuid.uuid4().hex[:8]}"
-        self._q("create_task", incident=incident, agent=agent, task=task, kind=kind, now=self.clock())
+        self._q("create_task", incident=incident, agent=agent, task=task, kind=kind, now=self._now())
         return task
 
     def complete_task(self, task):
-        self._q("complete_task", task=task, now=self.clock())
+        self._q("complete_task", task=task, now=self._now())
+
+    def fail_task(self, task, error):
+        self._q("fail_task", task=task, now=self._now(), error=str(error)[:300])
 
     def handoff_task(self, task, to, reason):
-        self._q("handoff_task", task=task, to=to, now=self.clock(), reason=reason)
+        self._q("handoff_task", task=task, to=to, now=self._now(), reason=reason)
 
     def mark_affected(self, incident, service, role):
         self._q("mark_affected", incident=incident, service=service, role=role)
@@ -113,7 +162,7 @@ class Tools:
 
     def record_outcome(self, incident, playbook, worked, minutes):
         self._q("record_outcome", incident=incident, playbook=playbook, worked=worked,
-                minutes=minutes, now=int(self.clock()))
+                minutes=minutes, now=int(self._now()))
 
     def node_ids(self, evidence):
         """Internal ids of the nodes named in ``evidence`` = {label: [key, ...]}."""
@@ -133,6 +182,6 @@ class Tools:
         """Store a claim, the query behind it, and EVIDENCE edges to the supporting nodes."""
         fid = f"FND-{uuid.uuid4().hex[:8]}"
         self._q("record_finding", incident=incident, agent=agent, fid=fid, claim=claim,
-                confidence=round(float(confidence), 2), query=query, now=self.clock(),
+                confidence=round(float(confidence), 2), query=query, now=self._now(),
                 node_ids=self.node_ids(evidence))
         return fid
