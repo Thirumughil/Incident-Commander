@@ -224,11 +224,11 @@ Adapted from Framer module `https://framer.com/m/Test-pBXiEm.js@40kBe6UQV9K7rt3P
 
 ---
 
-## 12. Interactive 3D Digital Twin Graph Definition & Architecture
+## 12. Interactive 3D Digital Twin Graph (FalkorDB Microservice Architecture)
 
 - **Strict Preservation Boundary:**
   - `Progressive 3D Motion` (`Graph3D.tsx`) was left completely untouched, preserving its force-directed physics, particle orbits, and motion engine.
-  - All changes were isolated cleanly to the `Interactive 3D Digital Twin` graph component (`Interactive3DViewer.tsx`), transforming it from an incomplete placeholder into a full-fidelity architectural digital twin.
+  - All changes were isolated cleanly to the `Interactive 3D Digital Twin` graph component (`Interactive3DViewer.tsx`), without altering any other components, views, or layouts.
 - **Microservice Dependency Topology:**
   - Renders the complete FalkorDB microservice graph (`detail.graph.nodes` and `detail.graph.edges`) in 3D world space.
   - Nodes are organized into radial blast radius shells:
@@ -238,6 +238,7 @@ Adapted from Framer module `https://framer.com/m/Test-pBXiEm.js@40kBe6UQV9K7rt3P
     - **Hop 2..3+ Cascading Horizon (Radius 165..240):** Structured multi-tier shells scaled by service tier with deep blue PBR materials.
 - **Physical Directed Dependency Conduits:**
   - Real `DEPENDS_ON` relationships rendered as physical 3D volumetric pipelines using `TubeGeometry` along 3-point `CatmullRomCurve3` parabolic arcs (`mid.y += 12`), preventing lines from intersecting or clipping central spheres.
+  - Directional flow cone arrows on the tubes indicating FalkorDB `DEPENDS_ON` direction.
   - Animated energy particle pulses (`THREE.Points`) streaming continuously along each conduit curve, visualizing the direction and intensity of live traffic.
   - Origin-to-alert explain paths highlighted with amplified amber emissive radiance and enlarged particle pulses.
 - **Anti-Aliased World-Space 3D Billboard Text Sprites:**
@@ -247,8 +248,9 @@ Adapted from Framer module `https://framer.com/m/Test-pBXiEm.js@40kBe6UQV9K7rt3P
   - `depthTest: false` applied so billboard text is never obscured or sliced by 3D geometry.
 - **Blast Radius Cyber-Pedestal & Telemetry HUD:**
   - Ground pedestal cylinder at $y = -66$ with 4 concentric spatial coordinate rings demarcating blast radius hop distances (Origin Zone: 65, Hop 1: 110, Hop 2: 175, Hop 3+: 240) and contact shadow.
-  - Top controls toolbar featuring Orbiting toggle, PBR Exposure calibration (0.8x..1.6x), and smooth camera preset glides (`Focus Origin`, `Full Topology`, `Top-Down`, `Reset`).
+  - Top controls toolbar featuring Orbiting toggle, PBR Exposure calibration (0.8x..1.6x), and smooth camera preset glides (`Focus Origin`, `Blast Radius`, `Reset`).
   - Raycaster hover detection with anchored top-left telemetry HUD card displaying service role, tier, and upstream/downstream dependency counts.
   - Raycaster click navigation invoking `onSelectService` and smoothly gliding the camera to the target node.
 - **Verification Evidence:**
   - Live screenshot [`2d_incident_graph_twin.png`](file:///T:/Agent%20WMD%202/incident-commander/docs/screenshots/2d_incident_graph_twin.png).
+
