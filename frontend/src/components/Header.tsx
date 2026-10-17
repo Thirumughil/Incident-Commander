@@ -8,6 +8,7 @@ import type { IncidentSummary, PageRoute } from '../types'
 import { FloatingPillNavigation, type FloatingPillItem } from './FloatingPillNavigation'
 import { AnimatedPath, HEADER_STREAM_PATH, HEADER_STREAM_POINTS } from './AnimatedPath'
 import { AnimatedAccordion, type AccordionItemData } from './AnimatedAccordion'
+import { FluidButton } from './FluidButton'
 
 interface HeaderProps {
   currentRoute: PageRoute
@@ -385,37 +386,35 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Quick Actions */}
-          <button
-            type="button"
-            className="header-action-btn inject-btn"
+          {/* Quick Actions powered by Framer FluidButton */}
+          <FluidButton
+            variant="amber"
+            size="sm"
+            icon={<Activity size={13} />}
+            text={injecting ? 'Injecting...' : 'Inject Demo'}
             onClick={onInject}
             disabled={injecting}
             title="Inject Synthetic Microservice Failure on currency service"
-          >
-            <Activity size={13} />
-            <span>{injecting ? 'Injecting...' : 'Inject Demo'}</span>
-          </button>
+          />
 
-          <button
-            type="button"
-            className="header-action-btn run-btn"
+          <FluidButton
+            variant="primary"
+            size="sm"
+            icon={<Play size={13} />}
+            text={running ? 'Running...' : 'Run Agents'}
             onClick={onRunAgents}
             disabled={running}
             title="Run Multi-Agent Pipeline (Detector -> Analyzer -> Responder)"
-          >
-            <Play size={13} />
-            <span>{running ? 'Running...' : 'Run Agents'}</span>
-          </button>
+          />
 
-          <button
-            type="button"
-            className="header-icon-btn refresh-btn"
+          <FluidButton
+            variant="glass"
+            size="sm"
+            icon={<RefreshCw size={14} />}
             onClick={onRefresh}
             title="Refresh All Graph Data"
-          >
-            <RefreshCw size={14} />
-          </button>
+            style={{ padding: '6px 10px', minWidth: 32 }}
+          />
 
           {/* System Health Indicators */}
           <div className="health-badges-group">

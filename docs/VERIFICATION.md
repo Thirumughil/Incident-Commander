@@ -170,3 +170,20 @@ Adapted from Framer module `https://framer.com/m/AnimatedAccordion-yn5pTV.js@SSK
 - **End-to-End Walkthrough Automation (`scripts/drive_ui.py`):**
   - All 11 verification screenshots captured to `docs/screenshots/` with exit code 0.
 
+---
+
+## 9. Framer Fluid Button Integration
+
+Adapted from Framer module `https://framer.com/m/Fluid-Button-TYcP.js@Zhk4D4902uwzpqUJQTaH`:
+- **Fluid Button Component (`FluidButton.tsx`):**
+  - Liquid fluid overlay (`.fluid-overlay`) that sweeps upward from the base with morphing `border-radius: 50% 50% 0 0` $\to$ `0%` using `cubic-bezier(0.4, 0, 0.2, 1)`.
+  - Dual-line label stack (`.fluid-label-stack-container`): upper text slides up and clips out, while lower contrasting text slides into view over the fluid layer.
+  - Elastic hover pulse physics (`scale: 1.04`, subtle click depress `scale: 0.97`, and radial glow box-shadow).
+  - High-contrast, theme-tailored variants: `primary` (cyan), `amber` (demo actions), `danger` (origin focus), `success` (learning submit), `purple` (agent coordination), and `glass` (subtle utilities).
+- **Application-Wide Integrations:**
+  - **Global Header (`Header.tsx`):** "Inject Demo", "Run Agents", and "Refresh" action buttons.
+  - **Operations Dashboard (`OverviewPage.tsx`):** Quick Demo cards ("1. Inject Demo Failure", "2. Run Agent Pipeline") and accordion card actions ("Inspect in 3D Graph", "Why Cypher Audit", "Set as Active Incident").
+  - **3D Topology & Blast Radius (`Graph3D.tsx`):** 3D motion controls ("Orbiting", "Exp", "Highlight Explain Path", "Focus Origin", "Blast Radius", "Top-Down", "Fit View", "Fit & Expand to Full Screen").
+  - **Memory & Response (`MemoryPage.tsx`):** Closed-loop resolution submission button ("Submit Resolution Feedback").
+
+

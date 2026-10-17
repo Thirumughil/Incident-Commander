@@ -4,6 +4,7 @@ import {
   ShieldCheck, Check, UserCheck
 } from 'lucide-react'
 import type { IncidentDetail, PageRoute } from '../types'
+import { FluidButton } from '../components/FluidButton'
 
 interface MemoryPageProps {
   detail: IncidentDetail | null
@@ -319,14 +320,16 @@ export const MemoryPage: React.FC<MemoryPageProps> = ({
                   />
                 </div>
 
-                <button
+                <FluidButton
                   type="submit"
+                  variant="success"
+                  size="md"
+                  icon={<CheckCircle2 size={16} />}
+                  text={resolving ? 'Recording Closed-Loop Learning...' : 'Submit Resolution Feedback'}
                   disabled={resolving || !resolvePlaybook}
                   className="submit-resolve-btn"
-                >
-                  <CheckCircle2 size={16} />
-                  <span>{resolving ? 'Recording Closed-Loop Learning...' : 'Submit Resolution Feedback'}</span>
-                </button>
+                  style={{ width: '100%', marginTop: 8 }}
+                />
               </form>
             )}
           </div>

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import type { IncidentDetail } from '../types'
 import { Interactive3DViewer } from './Interactive3DViewer'
+import { FluidButton } from './FluidButton'
 
 interface Graph3DProps {
   detail: IncidentDetail
@@ -774,104 +775,98 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
             </button>
           </div>
 
-          {/* Progressive 3D Motion Controls (Inspired by Interactive3DViewer) */}
+          {/* Progressive 3D Motion Controls powered by FluidButton */}
           {viewMode === '3d' && (
             <>
               {/* Auto-Rotate Orbital Motion Toggle */}
-              <button
-                type="button"
-                className={`tool-btn ${autoRotate ? 'active' : ''}`}
+              <FluidButton
+                variant={autoRotate ? 'primary' : 'glass'}
+                size="sm"
+                icon={<RotateCw size={13} className={autoRotate ? 'spin-slow' : ''} />}
+                text={autoRotate ? 'Orbiting (3D Motion)' : 'Orbit Paused'}
                 onClick={() => setAutoRotate(!autoRotate)}
                 title="Toggle continuous progressive 3D orbital motion"
-              >
-                <RotateCw size={13} className={autoRotate ? 'spin-slow' : ''} />
-                <span>{autoRotate ? 'Orbiting (3D Motion)' : 'Orbit Paused'}</span>
-              </button>
+              />
 
               {/* Exposure Control */}
-              <button
-                type="button"
-                className="tool-btn"
+              <FluidButton
+                variant="glass"
+                size="sm"
+                icon={<Sun size={13} color="#f59e0b" />}
+                text={`Exp: ${exposure.toFixed(1)}x`}
                 onClick={() => setExposure(prev => (prev >= 1.5 ? 0.8 : +(prev + 0.35).toFixed(1)))}
                 title="Adjust WebGL exposure & light intensity"
-              >
-                <Sun size={13} color="#f59e0b" />
-                <span>Exp: {exposure.toFixed(1)}x</span>
-              </button>
+              />
 
               {/* Explain Path Highlight */}
-              <button
-                type="button"
-                className={`tool-btn ${highlightExplain ? 'active' : ''}`}
+              <FluidButton
+                variant={highlightExplain ? 'amber' : 'glass'}
+                size="sm"
+                icon={<Zap size={14} color="#f59e0b" />}
+                text="Highlight Explain Path"
                 onClick={() => setHighlightExplain(!highlightExplain)}
-              >
-                <Zap size={14} color="#f59e0b" />
-                <span>Highlight Explain Path</span>
-              </button>
+              />
             </>
           )}
 
           {viewMode === '2d' && (
-            <button
-              type="button"
-              className={`tool-btn ${highlightExplain ? 'active' : ''}`}
+            <FluidButton
+              variant={highlightExplain ? 'amber' : 'glass'}
+              size="sm"
+              icon={<Zap size={14} color="#f59e0b" />}
+              text="Highlight Explain Path"
               onClick={() => setHighlightExplain(!highlightExplain)}
-            >
-              <Zap size={14} color="#f59e0b" />
-              <span>Highlight Explain Path</span>
-            </button>
+            />
           )}
         </div>
 
-        <div className="viewer-right-controls">
+        <div className="viewer-right-controls" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {/* Camera Hotspot Presets in 3D Mode */}
           {viewMode === '3d' && (
-            <div className="camera-presets-group">
-              <button
-                type="button"
-                className={`preset-pill-btn ${activePreset === 'origin' ? 'active' : ''}`}
+            <div className="camera-presets-group" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <FluidButton
+                variant={activePreset === 'origin' ? 'danger' : 'glass'}
+                size="sm"
+                icon={<Target size={12} color="#ef4444" />}
+                text="Focus Origin"
                 onClick={() => handlePreset('origin')}
                 title="Glide camera to Focus on Root Cause Origin"
-              >
-                <Target size={12} color="#ef4444" />
-                <span>Focus Origin</span>
-              </button>
-              <button
-                type="button"
-                className={`preset-pill-btn ${activePreset === 'blast' ? 'active' : ''}`}
+              />
+              <FluidButton
+                variant={activePreset === 'blast' ? 'primary' : 'glass'}
+                size="sm"
+                icon={<Compass size={12} color="#38bdf8" />}
+                text="Blast Radius"
                 onClick={() => handlePreset('blast')}
                 title="Isometric View of Full Blast Radius"
-              >
-                <Compass size={12} color="#38bdf8" />
-                <span>Blast Radius</span>
-              </button>
-              <button
-                type="button"
-                className={`preset-pill-btn ${activePreset === 'top' ? 'active' : ''}`}
+              />
+              <FluidButton
+                variant={activePreset === 'top' ? 'purple' : 'glass'}
+                size="sm"
+                icon={<Box size={12} />}
+                text="Top-Down"
                 onClick={() => handlePreset('top')}
                 title="Top-Down Overhead Spatial Angle"
-              >
-                <Box size={12} />
-                <span>Top-Down</span>
-              </button>
+              />
             </div>
           )}
 
           {/* Reset / Fit View */}
-          <button
-            type="button"
-            className="tool-btn"
+          <FluidButton
+            variant="glass"
+            size="sm"
+            icon={<RotateCcw size={14} />}
+            text="Fit View"
             onClick={handleResetView}
             title={viewMode === '2d' ? 'Fit and Center 2D Graph' : 'Fit and Center 3D Camera'}
-          >
-            <RotateCcw size={14} />
-            <span>Fit View</span>
-          </button>
+          />
 
           {/* Fullscreen Expand / Fit Button */}
-          <button
-            type="button"
-            className="tool-btn expand-btn"
+          <FluidButton
+            variant="primary"
+            size="sm"
+            icon={isFullscreen ? <Minimize2 size={15} color="#38bdf8" /> : <Maximize2 size={15} color="#38bdf8" />}
+            text={isFullscreen ? 'Exit Fullscreen' : 'Fit & Expand to Full Screen'}
             onClick={() => {
               setIsFullscreen(prev => {
                 const next = !prev
@@ -882,19 +877,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
               })
             }}
             title={isFullscreen ? 'Exit Full Screen' : 'Fit & Expand to Full Screen'}
-          >
-            {isFullscreen ? (
-              <>
-                <Minimize2 size={15} color="#38bdf8" />
-                <span>Exit Fullscreen</span>
-              </>
-            ) : (
-              <>
-                <Maximize2 size={15} color="#38bdf8" />
-                <span>Fit & Expand to Full Screen</span>
-              </>
-            )}
-          </button>
+          />
         </div>
       </div>
 

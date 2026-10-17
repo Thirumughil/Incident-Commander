@@ -4134,3 +4134,31 @@ tr:hover td {
   color: #38bdf8;
 }
 
+/* ==========================================================================
+   FRAMER FLUID BUTTON STYLES & LIQUID WAVE
+   ========================================================================== */
+.fluid-button-root {
+  position: relative;
+  border-radius: 9999px;
+  overflow: hidden;
+  will-change: transform, box-shadow;
+}
+
+.fluid-button-root:hover .fluid-overlay {
+  transform: translateY(-68%);
+  border-radius: 0%;
+}
+
+.fluid-button-root:hover .fluid-upper-text {
+  transform: translateY(-100%);
+}
+
+.fluid-button-root:hover .fluid-lower-text {
+  transform: translateY(-100%);
+}
+
+.fluid-button-root.fluid-disabled {
+  pointer-events: none;
+}
+
+

@@ -7,6 +7,7 @@ import {
 import type { IncidentSummary, IncidentDetail, PageRoute } from '../types'
 import { AnimatedPath } from '../components/AnimatedPath'
 import { AnimatedAccordion, type AccordionItemData } from '../components/AnimatedAccordion'
+import { FluidButton } from '../components/FluidButton'
 
 interface OverviewPageProps {
   incidents: IncidentSummary[]
@@ -115,46 +116,32 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, paddingTop: 4 }}>
-            <button
-              type="button"
-              className="tool-btn"
+            <FluidButton
+              variant="glass"
+              size="sm"
+              icon={<Network size={12} color="#38bdf8" />}
+              text="Inspect in 3D Graph"
               onClick={() => {
                 onSelectIncident(inc.id)
                 onNavigate('graph')
               }}
-              style={{ padding: '6px 12px', fontSize: 11, cursor: 'pointer' }}
-            >
-              <Network size={12} color="#38bdf8" />
-              <span>Inspect in 3D Graph</span>
-            </button>
-            <button
-              type="button"
-              className="tool-btn"
+            />
+            <FluidButton
+              variant="glass"
+              size="sm"
+              icon={<Sparkles size={12} color="#f59e0b" />}
+              text="Why Cypher Audit"
               onClick={() => {
                 onSelectIncident(inc.id)
                 onNavigate('why')
               }}
-              style={{ padding: '6px 12px', fontSize: 11, cursor: 'pointer' }}
-            >
-              <Sparkles size={12} color="#f59e0b" />
-              <span>Why Cypher Audit</span>
-            </button>
-            <button
-              type="button"
+            />
+            <FluidButton
+              variant={isSelected ? 'primary' : 'glass'}
+              size="sm"
+              text={isSelected ? '✓ Active Incident' : 'Set as Active Incident'}
               onClick={() => onSelectIncident(inc.id)}
-              style={{
-                padding: '6px 14px',
-                fontSize: 11,
-                fontWeight: 600,
-                borderRadius: 6,
-                background: isSelected ? 'rgba(56, 189, 248, 0.25)' : '#1e2c3f',
-                color: isSelected ? '#38bdf8' : '#ffffff',
-                border: `1px solid ${isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.1)'}`,
-                cursor: 'pointer',
-              }}
-            >
-              {isSelected ? '✓ Active Incident' : 'Set as Active Incident'}
-            </button>
+            />
           </div>
         </div>
       ),
@@ -207,22 +194,24 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             <Play size={16} color="#f59e0b" />
           </div>
           <div className="quick-sim-buttons">
-            <button
-              type="button"
-              className="quick-btn-inject"
+            <FluidButton
+              variant="amber"
+              size="sm"
+              icon={<Activity size={13} />}
+              text={injecting ? 'Injecting...' : '1. Inject Demo Failure'}
               onClick={onInject}
               disabled={injecting}
-            >
-              {injecting ? 'Injecting...' : '1. Inject Demo Failure'}
-            </button>
-            <button
-              type="button"
-              className="quick-btn-run"
+              style={{ width: '100%', justifyContent: 'flex-start' }}
+            />
+            <FluidButton
+              variant="primary"
+              size="sm"
+              icon={<Play size={13} />}
+              text={running ? 'Running Pipeline...' : '2. Run Agent Pipeline'}
               onClick={onRunAgents}
               disabled={running}
-            >
-              {running ? 'Running Pipeline...' : '2. Run Agent Pipeline'}
-            </button>
+              style={{ width: '100%', justifyContent: 'flex-start' }}
+            />
           </div>
         </div>
       </div>
