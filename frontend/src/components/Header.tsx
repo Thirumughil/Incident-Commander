@@ -84,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({
           <span style={{ color: isOpen ? '#f87171' : '#34d399', fontWeight: 700, fontSize: 12 }}>
             {inc.id}
           </span>
-          <span style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 500 }}>
+          <span style={{ color: '#ffffff', fontSize: 13, fontWeight: 500 }}>
             {inc.title}
           </span>
         </div>
@@ -126,19 +126,19 @@ export const Header: React.FC<HeaderProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8, fontSize: 11 }}>
             <div>
-              <span style={{ color: '#64748b' }}>Root Origin: </span>
+              <span style={{ color: '#a1a1aa' }}>Root Origin: </span>
               <strong style={{ color: '#f87171' }}>{inc.origin || 'currency'}</strong>
             </div>
             <div>
-              <span style={{ color: '#64748b' }}>Severity: </span>
+              <span style={{ color: '#a1a1aa' }}>Severity: </span>
               <strong style={{ color: '#f59e0b' }}>{inc.severity.toUpperCase()}</strong>
             </div>
             <div>
-              <span style={{ color: '#64748b' }}>Playbook: </span>
+              <span style={{ color: '#a1a1aa' }}>Playbook: </span>
               <strong style={{ color: '#38bdf8' }}>{inc.recommended_playbook || 'PB-04'}</strong>
             </div>
             <div>
-              <span style={{ color: '#64748b' }}>Dispatched SRE: </span>
+              <span style={{ color: '#a1a1aa' }}>Dispatched SRE: </span>
               <strong style={{ color: '#a855f7' }}>{inc.paged || 'Priya Raman'}</strong>
             </div>
           </div>
@@ -155,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({
                 fontSize: 11,
                 fontWeight: 600,
                 borderRadius: 6,
-                background: isCurrent ? 'rgba(56, 189, 248, 0.2)' : '#1e2c3f',
+                background: isCurrent ? 'rgba(56, 189, 248, 0.2)' : 'rgba(28, 29, 35, 0.9)',
                 color: isCurrent ? '#38bdf8' : '#ffffff',
                 border: `1px solid ${isCurrent ? '#38bdf8' : 'rgba(255, 255, 255, 0.1)'}`,
                 cursor: 'pointer',
@@ -206,7 +206,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div style={{ color: '#cbd5e1' }}>
             Isolated RedisGraph keyspace: <code style={{ color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: 4 }}>tenant_{t}</code>
           </div>
-          <div style={{ color: '#64748b' }}>
+          <div style={{ color: '#a1a1aa' }}>
             Zero-cross-tenant leakage guarantee. All autonomous agents and Cypher queries are strictly scoped to this isolated tenant graph.
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
@@ -222,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({
                 fontSize: 11,
                 fontWeight: 600,
                 borderRadius: 6,
-                background: isCurrent ? 'rgba(16, 185, 129, 0.2)' : '#1e2c3f',
+                background: isCurrent ? 'rgba(16, 185, 129, 0.2)' : 'rgba(28, 29, 35, 0.9)',
                 color: isCurrent ? '#34d399' : '#ffffff',
                 border: `1px solid ${isCurrent ? '#34d399' : 'rgba(255, 255, 255, 0.1)'}`,
                 cursor: 'pointer',

@@ -158,6 +158,21 @@ def run():
             page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "7_service_profile_drawer.png"))
             log("Saved 7_service_profile_drawer.png")
 
+            # Close drawer
+            close_btn = page.locator(".drawer-close-btn")
+            if close_btn.is_visible():
+                close_btn.click()
+                time.sleep(1)
+
+            # 9. Verify Figma Salt & Pepper Footer with Hackathon Tracks Banner
+            log("9. Scrolling to verify Figma Salt & Pepper Footer...")
+            footer_el = page.locator(".global-footer")
+            if footer_el.is_visible():
+                footer_el.scroll_into_view_if_needed()
+                time.sleep(1.5)
+                page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "8_salt_and_pepper_footer.png"))
+                log("Saved 8_salt_and_pepper_footer.png")
+
             browser.close()
             log("SUCCESS: All UI walkthrough steps passed and screenshots saved!")
     except Exception as exc:

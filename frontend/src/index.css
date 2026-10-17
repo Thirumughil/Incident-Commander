@@ -8,20 +8,21 @@
 
   /* Figma Salt & Pepper Palette Tokens */
   --pepper-bg: #07080a;
-  --pepper-surface-1: rgba(12, 15, 21, 0.82);
-  --pepper-surface-2: rgba(18, 22, 30, 0.75);
-  --pepper-surface-solid: #0d1017;
-  --pepper-border: rgba(255, 255, 255, 0.08);
-  --pepper-border-hover: rgba(255, 255, 255, 0.16);
-  --pepper-muted: #64748b;
-  --pepper-subtle: #475569;
+  --pepper-surface-1: rgba(18, 19, 23, 0.82);
+  --pepper-surface-2: rgba(25, 26, 31, 0.85);
+  --pepper-surface-solid: #121316;
+  --pepper-surface-raised: #18191d;
+  --pepper-border: rgba(255, 255, 255, 0.09);
+  --pepper-border-hover: rgba(255, 255, 255, 0.18);
+  --pepper-muted: #a1a1aa;
+  --pepper-subtle: #71717a;
 
   --salt-pure: #ffffff;
   --salt-100: #f8fafc;
   --salt-200: #f1f5f9;
   --salt-300: #e2e8f0;
-  --salt-400: #cbd5e1;
-  --salt-muted: #94a3b8;
+  --salt-400: #d4d4d8;
+  --salt-muted: #a1a1aa;
 
   /* Semantic Accents on Salt & Pepper Base */
   --accent-cyan: #38bdf8;

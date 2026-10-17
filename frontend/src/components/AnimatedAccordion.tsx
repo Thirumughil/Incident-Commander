@@ -232,13 +232,13 @@ function AccordionRow({
             padding: '14px 18px',
             borderRadius: 12,
             background: isOpen
-              ? 'rgba(15, 25, 42, 0.9)'
+              ? 'rgba(26, 27, 33, 0.92)'
               : hovered
-                ? 'rgba(15, 25, 42, 0.7)'
-                : 'rgba(10, 18, 30, 0.5)',
-            border: `1px solid ${isOpen ? `${effectiveAccent}55` : borderColor}`,
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
+                ? 'rgba(32, 33, 39, 0.85)'
+                : 'rgba(18, 19, 23, 0.72)',
+            border: `1px solid ${isOpen ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.08)'}`,
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
             cursor: 'pointer',
             userSelect: 'none',
             transition: 'background-color 500ms, border-color 500ms, border-radius 500ms',
@@ -297,13 +297,13 @@ function AccordionRow({
               style={{
                 position: 'relative',
                 padding: '16px 18px',
-                border: `1px solid ${effectiveAccent}33`,
+                border: `1px solid rgba(255, 255, 255, 0.10)`,
                 borderTop: 'none',
                 borderBottomLeftRadius: 12,
                 borderBottomRightRadius: 12,
-                background: 'rgba(8, 14, 24, 0.75)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
+                background: 'rgba(16, 17, 21, 0.88)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
               }}
             >
               {/* Top border glow line */}
@@ -314,7 +314,7 @@ function AccordionRow({
                   left: 0,
                   width: '100%',
                   height: 1,
-                  background: `linear-gradient(to right, transparent, ${effectiveAccent}66, transparent)`,
+                  background: `linear-gradient(to right, transparent, rgba(255, 255, 255, 0.25), transparent)`,
                 }}
                 aria-hidden="true"
               />
@@ -353,10 +353,10 @@ export const AnimatedAccordion: React.FC<AnimatedAccordionProps> = ({
   defaultOpenIndex = 0,
   titleSize = 13,
   bodySize = 13,
-  titleColor = '#f8fafc',
-  bodyColor = '#cbd5e1',
-  mutedColor = '#94a3b8',
-  borderColor = 'rgba(56, 189, 248, 0.16)',
+  titleColor = '#ffffff',
+  bodyColor = '#f4f4f6',
+  mutedColor = '#a1a1aa',
+  borderColor = 'rgba(255, 255, 255, 0.09)',
   rowGap = 12,
   className = '',
   style = {},

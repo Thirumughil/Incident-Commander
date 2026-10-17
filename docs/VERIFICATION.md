@@ -202,4 +202,22 @@ Adapted from Framer module `https://framer.com/m/Test-pBXiEm.js@40kBe6UQV9K7rt3P
   - **Crystalline Salt Highlights:** `--salt-pure: #ffffff`, `--salt-100: #f8fafc`, `--salt-200: #e2e8f0`, `--salt-muted: #94a3b8`.
   - **Smoky Slate Pepper Accents:** `--pepper-accent-1: #334155`, `--pepper-accent-2: #475569`, providing refined monochromatic depth.
   - **Translucent Glassmorphic Surfaces:** Cards (`.kpi-card`, `.incident-spotlight-card`, `.incidents-feed-section`, `.why-claim-card`, `.task-card`), headers, and drawers styled with `rgba(13, 16, 23, 0.78)` backgrounds and `backdrop-filter: blur(14px)`, allowing the monochromatic salt & pepper aurora mesh to subtly flow beneath without compromising readability.
+---
 
+## 11. Complete Salt & Pepper Box Transformation & Prominent Hackathon Footer
+
+- **Comprehensive Box Transformation across Entire App:**
+  - Replaced all legacy navy/slate blue tints (`#0d1522`, `#0b111e`, `#0d121c`, `#1a273b`, `#1e2c3f`, `#284469`, etc.) across all cards, panels, popovers, and drawers with the pure **Figma Salt & Pepper** color palette:
+    - **Obsidian Charcoal Pepper Surfaces:** `rgba(18, 19, 23, 0.82)` to `rgba(26, 27, 33, 0.92)` with silky frosted glass `backdrop-filter: blur(16px)` and `-webkit-backdrop-filter: blur(16px)`.
+    - **Crisp Salt White Borders:** `1px solid rgba(255, 255, 255, 0.09)` default, `rgba(255, 255, 255, 0.18)` on hover/focus, and glowing salt borders.
+    - **Pure Salt High-Contrast Typography:** Pure white `#ffffff` headings and active states, off-white `#f4f4f6` body text, and crisp `#a1a1aa` secondary metadata replacing dark low-contrast text.
+  - Updated all components including `.kpi-card`, `.incident-spotlight-card`, `.launch-card-btn`, `.incidents-feed-section`, `.drawer-panel`, `.why-claim-card`, `.task-card`, and `AnimatedAccordion` rows.
+- **Scroll-Contained Operations Feed:**
+  - Styled `.accordion-feed-wrapper` and `.table-responsive-wrapper` with `max-height: 520px; overflow-y: auto;` and custom thin salt & pepper scrollbars.
+  - Prevents 33 incidents from ballooning the page into 3500px of scrolling, ensuring balanced page height and instantaneous footer visibility.
+- **Prominent Hackathon Tracks Footer (`Footer.tsx`):**
+  - **Hero Hackathon Strip:** Prominently highlights the 3 tracks: **Track 1: Connected Data (WCC & Cypher)**, **Track 2: Agent Memory (4 Tiers)**, and **Track 3: Company Brain (SPOFs)** with glowing pulse indicators.
+  - **FalkorDB Graph Engine Status:** Live green status dot, Port 6380, keyspace isolation tag (`tenant_acme`), AOF persistence, and `<4ms` roundtrip metric.
+  - **Mission Control Quick Links:** Rapid cross-section navigation with active state and hover highlights.
+  - **Submission Credentials:** Solo student builder badge (Thiru Mughil Senthur R), 21/21 Cypher Queries Verified, 55/55 Tests Passing, and MIT License.
+  - Verified across all routes with live screenshot [`8_salt_and_pepper_footer.png`](file:///T:/Agent%20WMD%202/incident-commander/docs/screenshots/8_salt_and_pepper_footer.png).
