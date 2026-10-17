@@ -1,13 +1,14 @@
 """Automated UI walkthrough with Playwright for Incident Commander.
 
-Captures screenshots to docs/screenshots/:
+Captures live screenshots to docs/screenshots/:
 1. 1_dashboard_overview.png
-2. 2_incident_graph_explain.png
-3. 3_why_evidence_panel.png
-4. 4_coordination_tasks.png
-5. 5_learning_resolved_score.png
-6. 6_company_brain_knowledge.png
-7. 7_service_profile_drawer.png
+2. 2_incident_graph_3d.png
+3. 2b_incident_graph_fullscreen.png
+4. 3_why_evidence_panel.png
+5. 4_coordination_tasks.png
+6. 5_learning_resolved_score.png
+7. 6_company_brain_knowledge.png
+8. 7_service_profile_drawer.png
 """
 import os
 import sys
@@ -25,92 +26,96 @@ def run():
     log("Starting Playwright UI walkthrough...")
     try:
         with sync_playwright() as p:
-            log("Launching headless Chromium...")
+            log("Launching Chromium browser...")
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(viewport={"width": 1440, "height": 900})
             page = context.new_page()
 
-            # 1. Load Dashboard
-            log("1. Navigating to http://127.0.0.1:5173 ...")
-            page.goto("http://127.0.0.1:5173")
-            page.wait_for_selector(".brand", timeout=15000)
+            # 1. Load Operations Overview
+            log("1. Navigating to http://127.0.0.1:5173/#/overview ...")
+            page.goto("http://127.0.0.1:5173/#/overview")
+            page.wait_for_selector(".global-header", timeout=15000)
             time.sleep(2)
             page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "1_dashboard_overview.png"))
             log("Saved 1_dashboard_overview.png")
 
-            # 2. Inject Demo Incident
-            log("2. Clicking 'Inject Demo Incident' ...")
-            page.locator("button:has-text('Inject Demo Incident')").click()
-            page.wait_for_selector(".notice-box", timeout=10000)
-            time.sleep(1)
-
-            # 3. Run Agent Pipeline
-            log("3. Clicking 'Run Agent Pipeline' ...")
-            page.locator("button:has-text('Run Agent Pipeline')").click()
-            time.sleep(3)
-            page.wait_for_selector(".incident-card", timeout=15000)
-
-            # 4. Highlight Explain Path on Cytoscape Graph
-            log("4. Highlighting Explain Path on Graph ...")
+            # 2. Progressive 3D Motion Incident Graph
+            log("2. Navigating to http://127.0.0.1:5173/#/graph ...")
+            page.goto("http://127.0.0.1:5173/#/graph")
+            page.wait_for_selector(".topology-viewer-container", timeout=15000)
+            time.sleep(2)
+            # Toggle explain path amber glow
             explain_btn = page.locator("button:has-text('Highlight Explain Path')")
             if explain_btn.is_visible():
                 explain_btn.click()
                 time.sleep(1)
-            page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "2_incident_graph_explain.png"))
-            log("Saved 2_incident_graph_explain.png")
+            page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "2_incident_graph_3d.png"))
+            log("Saved 2_incident_graph_3d.png")
 
-            # 5. Open Why Evidence Panel
-            log("5. Opening Evidence Panel ...")
-            page.locator("button:has-text('Evidence Panel')").click()
-            time.sleep(1)
+            # 3. Test Fullscreen Mode
+            log("3. Testing Fit & Expand Fullscreen mode...")
+            fullscreen_btn = page.locator("button:has-text('Fit & Expand to Full Screen')")
+            if fullscreen_btn.is_visible():
+                fullscreen_btn.click()
+                time.sleep(1.5)
+                page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "2b_incident_graph_fullscreen.png"))
+                log("Saved 2b_incident_graph_fullscreen.png")
+                # Exit fullscreen
+                exit_btn = page.locator("button:has-text('Exit Fullscreen')")
+                if exit_btn.is_visible():
+                    exit_btn.click()
+                    time.sleep(1)
+
+            # 4. "Why?" Evidence Panel
+            log("4. Navigating to http://127.0.0.1:5173/#/why ...")
+            page.goto("http://127.0.0.1:5173/#/why")
+            page.wait_for_selector(".why-page-container", timeout=15000)
+            time.sleep(2)
             page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "3_why_evidence_panel.png"))
             log("Saved 3_why_evidence_panel.png")
 
-            # 6. Click an Evidence tag to focus on graph
-            log("6. Clicking evidence tag ...")
-            pill = page.locator(".evidence-pill").first
-            if pill.is_visible():
-                pill.click()
-                time.sleep(1)
-
-            # 7. Agent Coordination View
-            log("7. Viewing Agent Coordination Tasks ...")
-            page.locator("button:has-text('Coordination Tasks')").click()
-            time.sleep(1)
+            # 5. Agent Coordination Tasks
+            log("5. Navigating to http://127.0.0.1:5173/#/coordination ...")
+            page.goto("http://127.0.0.1:5173/#/coordination")
+            page.wait_for_selector(".coordination-page-container", timeout=15000)
+            time.sleep(2)
             page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "4_coordination_tasks.png"))
             log("Saved 4_coordination_tasks.png")
 
-            # 8. Memory & Response View
-            log("8. Navigating to Memory & Response ...")
-            page.locator("button:has-text('Memory & Response')").click()
-            time.sleep(1)
-
-            log("9. Submitting simulated feedback resolution ...")
-            resolve_btn = page.locator("button:has-text('Record Simulated Resolution')")
-            if resolve_btn.is_visible() and resolve_btn.is_enabled():
-                resolve_btn.click()
+            # 6. Memory & Response (Continuous Learning)
+            log("6. Navigating to http://127.0.0.1:5173/#/memory ...")
+            page.goto("http://127.0.0.1:5173/#/memory")
+            page.wait_for_selector(".memory-page-container", timeout=15000)
+            time.sleep(2)
+            # Submit resolution feedback if form is open
+            submit_btn = page.locator(".submit-resolve-btn")
+            if submit_btn.is_visible() and submit_btn.is_enabled():
+                log("Submitting operator feedback...")
+                submit_btn.click()
                 time.sleep(3)
             page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "5_learning_resolved_score.png"))
             log("Saved 5_learning_resolved_score.png")
 
-            # 9. Open Company Brain (Track 3)
-            log("10. Opening Company Brain ...")
-            page.locator("button:has-text('Company Brain')").click()
+            # 7. Company Brain (Track 3)
+            log("7. Navigating to http://127.0.0.1:5173/#/brain ...")
+            page.goto("http://127.0.0.1:5173/#/brain")
+            page.wait_for_selector(".brain-page-container", timeout=15000)
             time.sleep(2)
             page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "6_company_brain_knowledge.png"))
             log("Saved 6_company_brain_knowledge.png")
 
-            # 10. Open Service Profile Drawer
-            log("11. Opening Service Profile Drawer ...")
-            inspect_btn = page.locator("button:has-text('Inspect')").first
-            if inspect_btn.is_visible():
-                inspect_btn.click()
+            # 8. Open Service Profile Drawer
+            log("8. Clicking a service node to open Service Profile Drawer ...")
+            service_item = page.locator(".brain-service-item.clickable").first
+            if service_item.is_visible():
+                service_item.click()
+                page.wait_for_selector(".drawer-panel", timeout=10000)
                 time.sleep(2)
             page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "7_service_profile_drawer.png"))
             log("Saved 7_service_profile_drawer.png")
 
             browser.close()
-            log("SUCCESS: All UI steps executed and 7 screenshots saved to docs/screenshots/!")
+            log("SUCCESS: All UI walkthrough steps passed and screenshots saved!")
     except Exception as exc:
         log(f"FAILED: {exc}")
         traceback.print_exc()
