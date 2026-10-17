@@ -1,105 +1,289 @@
-# Incident Commander
+# Incident Commander: Graph-Powered AI Incident Response Team
 
-Agents that handle a production incident using a FalkorDB graph as their context layer:
-blast radius from the dependency graph, recall of similar past incidents, a learned
-ranking of fixes, who to page, and the graph path behind every answer.
+Incident Commander is an autonomous incident response agent team whose shared brain is a FalkorDB knowledge graph. When cascading alerts fire, a multi-agent pipeline (Detector, Analyzer, Responder, Learner) traverses the service dependency topology to identify root causes, calculate blast radius, recall similar past incidents, rank proven playbooks, and page the most experienced on-call engineer—grounding every decision with verifiable graph evidence links rather than prompt hallucination, and closing the feedback loop by recording operator outcomes directly into procedural graph memory.
 
-Built for Graph Hacks: Context for AI Agents. Tracks entered: Agents That Act on Connected
-Data, Agent Memory and Coordination, Company Brain. Status: work in progress.
+---
 
-## Quick start
+## Tracks Entered & How Each Is Satisfied
 
-Requirements: Docker, Python 3.11+, Node 20+ (for the dashboard).
+Built for **Graph Hacks: Context for AI Agents** (WeMakeDevs x FalkorDB). Entered in all three hackathon tracks:
 
-```bash
-docker compose up -d            # FalkorDB on :6380, FalkorDB Browser on http://localhost:3001
-python -m venv .venv && source .venv/bin/activate        # Windows: .venv\Scripts\Activate.ps1
+| Track | Hackathon Track Focus | How Incident Commander Satisfies It |
+| :--- | :--- | :--- |
+| **Track 1** | **Agents That Act on Connected Data** | Agents execute Cypher queries on FalkorDB at every step: Detector groups open alerts using Weakly Connected Components (`algo.WCC`); Analyzer traverses `DEPENDS_ON` edges for blast radius and correlates recent `Change` events deployed upstream; Responder navigates `OWNS` and `ON_CALL_FOR` relationships to page the right human on-call engineer. |
+| **Track 2** | **Agent Memory and Coordination** | Implements four distinct graph memory tiers in FalkorDB: Semantic (topology, teams), Episodic (past incidents and alert cascades), Procedural (learned playbook win/loss counters scored via $(s+1)/(s+f+2)$), and Coordination (immutable `Task` and `Finding` nodes with `EVIDENCE` edges). Agents never call each other via direct APIs; they coordinate strictly by reading and writing graph memory tasks with tenant-level run locks. |
+| **Track 3** | **Company Brain** | Turns operational history into an institutional intelligence asset: identifies Knowledge Single Points of Failure (services where only one person has ever fixed an outage), highlights critical architectural bottlenecks using PageRank (`algo.pageRank`) and Betweenness Centrality (`algo.betweenness`), and maintains full service profiles with historical incident causes and expert rosters. |
+
+---
+
+## Architecture Diagram
+
+```mermaid
+graph TD
+    subgraph FalkorDB["FalkorDB Graph (Tenant Isolated)"]
+        direction TB
+        subgraph Memory["Memory Types"]
+            SEM["Semantic Memory<br/>(Service, Team, Person, DEPENDS_ON)"]
+            EPI["Episodic Memory<br/>(Incident, Alert, Change, CAUSED_BY)"]
+            PRO["Procedural Memory<br/>(Playbook, APPLIES_TO, wins/losses)"]
+            COO["Coordination Memory<br/>(Task, Finding, EVIDENCE edges)"]
+        end
+    end
+
+    subgraph Agents["Autonomous Agent Pipeline"]
+        DET["1. Detector Agent<br/>(algo.WCC alert grouping)"]
+        ANA["2. Analyzer Agent<br/>(Root cause, blast radius, similar cases)"]
+        RES["3. Responder Agent<br/>(Playbook ranking, on-call page, draft)"]
+        LEA["4. Learner Agent<br/>(Outcome record, score feedback)"]
+    end
+
+    subgraph Client["UI & Interfaces"]
+        DASH["React + Vite + Cytoscape Dashboard"]
+        API["FastAPI Service Layer (:8000)"]
+    end
+
+    DET -->|"Reads alerts / Writes incident"| COO
+    COO -->|"Reads tasks & writes findings"| ANA
+    ANA -->|"Hands off task via graph"| RES
+    RES -->|"Records recommendations"| COO
+    LEA -->|"Updates playbook counters & outcome"| PRO
+
+    DASH <--> API
+    API <--> FalkorDB
+```
+
+---
+
+## Data Model & Graph Memory
+
+Each tenant runs in an isolated FalkorDB graph (`tenant_<id>`). The graph models four primary memory tiers:
+
+### 1. Node Labels & Core Properties
+- `Service`: `name` (id), `tier` (1, 2, 3), `language`, `slo_ms`.
+- `Team`: `name` (id), `slack_channel`.
+- `Person`: `name` (id), `role`, `oncall_now` (boolean).
+- `Change`: `id`, `kind` (`config`, `deploy`, `infra`), `summary`, `at` (epoch timestamp).
+- `Alert`: `id`, `metric`, `severity` (`critical`, `warning`), `fired_at`, `status` (`open`, `grouped`, `cleared`).
+- `Incident`: `id`, `title`, `severity`, `status` (`open`, `resolved`), `started_at`, `resolved_at`, `recommended_playbook`.
+- `Playbook`: `id`, `name`, `successes` (wins), `failures` (losses).
+- `Task`: `task` (id), `agent`, `kind` (`detect`, `analyze`, `respond`, `learn`), `status` (`open`, `done`, `handed_off`, `failed`), `created_at`, `finished_at`.
+- `Finding`: `id`, `agent`, `claim`, `confidence`, `query`, `created_at`.
+
+### 2. Relationships (Edges)
+- `(:Service)-[:DEPENDS_ON {kind, criticality}]->(:Service)`
+- `(:Team)-[:OWNS]->(:Service)`
+- `(:Person)-[:MEMBER_OF]->(:Team)`
+- `(:Person)-[:ON_CALL_FOR]->(:Team)`
+- `(:Person)-[:RESOLVED {minutes}]->(:Incident)`
+- `(:Change)-[:MODIFIED]->(:Service)`
+- `(:Alert)-[:FIRED_ON]->(:Service)`
+- `(:Alert)-[:PART_OF]->(:Incident)`
+- `(:Incident)-[:AFFECTED {role}]->(:Service)` (role: `'origin'` or `'impacted'`)
+- `(:Incident)-[:CAUSED_BY]->(:Change)`
+- `(:Incident)-[:FIXED_BY {worked, minutes}]->(:Playbook)`
+- `(:Playbook)-[:APPLIES_TO]->(:Service)`
+- `(:Finding)-[:EVIDENCE]->(:Node)` (links to concrete `Service`, `Change`, `Alert`, `Incident`, `Playbook`, or `Person` nodes)
+- `(:Task)-[:HANDED_OFF_TO {reason, at}]->(:Agent)`
+
+---
+
+## Key Cypher Queries
+
+All agent reasoning executes directly against FalkorDB via parameterised Cypher queries in `queries/`:
+
+### 1. Blast Radius (`queries/blast_radius.cypher`)
+*Finds all downstream services that depend on the failing service up to 4 hops away, nearest first.*
+```cypher
+MATCH p = (impacted:Service)-[:DEPENDS_ON*1..4]->(origin:Service {name: $service})
+RETURN impacted.name AS service, impacted.tier AS tier, min(length(p)) AS hops
+ORDER BY hops, tier, service
+```
+
+### 2. Suspect Changes (`queries/suspect_changes.cypher`)
+*Identifies recent deployments or configuration changes deployed to the alerting service or its upstream dependencies within the 2 hours prior.*
+```cypher
+MATCH (c:Change)-[:MODIFIED]->(s:Service)
+WHERE c.at >= $incident_start - 7200
+MATCH p = (affected:Service {name: $service})-[:DEPENDS_ON*0..3]->(s)
+RETURN c.id AS change, c.kind AS kind, c.summary AS summary, c.at AS at,
+       s.name AS changed_service, min(length(p)) AS distance
+ORDER BY distance, at DESC
+LIMIT 5
+```
+
+### 3. Similar Incidents (`queries/similar_incidents.cypher`)
+*Retrieves past resolved incidents sharing the same suspected origin, scoring them by alerting service overlap and change causality.*
+```cypher
+MATCH (i:Incident {status: 'resolved'})-[:AFFECTED {role: 'origin'}]->(:Service {name: $suspect})
+OPTIONAL MATCH (i)-[:AFFECTED]->(s:Service) WHERE s.name IN $alerting
+WITH i, count(DISTINCT s) AS overlap
+OPTIONAL MATCH (i)-[:CAUSED_BY]->(c:Change)
+WITH i, overlap, count(c) AS change_caused
+OPTIONAL MATCH (i)-[f:FIXED_BY]->(pb:Playbook) WHERE f.worked = true
+RETURN i.id AS incident, i.title AS title, i.started_at AS started_at, overlap, change_caused,
+       overlap + 2 * change_caused AS score, pb.id AS playbook_id, pb.name AS playbook, f.minutes AS minutes
+ORDER BY score DESC, started_at DESC
+LIMIT 5
+```
+
+### 4. Playbook Ranking (`queries/best_playbook.cypher`)
+*Ranks playbooks applicable to the origin service using Laplace-smoothed historical success rates so 1-for-1 does not beat 9-for-10.*
+```cypher
+MATCH (pb:Playbook)-[:APPLIES_TO]->(:Service {name: $service})
+RETURN pb.id AS playbook_id, pb.name AS name, pb.successes AS wins, pb.failures AS losses,
+       toFloat(pb.successes + 1) / (pb.successes + pb.failures + 2) AS score
+ORDER BY score DESC, name
+```
+
+### 5. Weakly Connected Components Alert Grouping (`queries/group_alerts_wcc.cypher`)
+*Clusters open alerts that fired within 5 minutes of each other on services within 2 dependency hops into a unified incident.*
+```cypher
+CALL algo.WCC({nodeLabels: ['Alert'], relationshipTypes: ['RELATED_TO']}) YIELD node, componentId
+WHERE node.status = 'open'
+RETURN componentId, collect(node.id) AS alerts
+ORDER BY size(alerts) DESC
+```
+
+### 6. Dependency Importance / PageRank (`queries/pagerank.cypher`)
+*Computes topological centrality over service dependencies to establish blast radius priority.*
+```cypher
+CALL algo.pageRank('Service', 'DEPENDS_ON') YIELD node, score
+RETURN node.name AS service, score
+ORDER BY score DESC
+LIMIT 10
+```
+
+### 7. Topological Chokepoints / Betweenness (`queries/betweenness.cypher`)
+*Identifies critical architectural bridges sitting on high volumes of shortest dependency paths.*
+```cypher
+CALL algo.betweenness({nodeLabels: ['Service'], relationshipTypes: ['DEPENDS_ON']}) YIELD node, score
+RETURN node.name AS service, score
+ORDER BY score DESC
+LIMIT 10
+```
+
+### 8. Who to Page (`queries/who_to_page.cypher`)
+*Finds currently on-call engineers for the team owning the origin service, ranked by prior successful incident resolutions.*
+```cypher
+MATCH (s:Service {name: $service})<-[:OWNS]-(t:Team)<-[:ON_CALL_FOR]-(p:Person)
+WHERE p.oncall_now = true
+OPTIONAL MATCH (p)-[r:RESOLVED]->(:Incident)-[:AFFECTED]->(s)
+RETURN p.name AS person, p.role AS role, t.name AS team, t.slack_channel AS channel, count(r) AS prior_fixes
+ORDER BY prior_fixes DESC
+```
+
+### 9. Knowledge Single Point of Failure (`queries/knowledge_spof.cypher`)
+*Surfaces services where exactly one engineer has ever resolved an outage, flagging critical organizational knowledge silos.*
+```cypher
+MATCH (s:Service)
+OPTIONAL MATCH (p:Person)-[:RESOLVED]->(:Incident)-[:AFFECTED]->(s)
+WITH s, count(DISTINCT p) AS people_who_fixed_it
+WHERE people_who_fixed_it = 1
+RETURN s.name AS service, s.tier AS tier, people_who_fixed_it
+ORDER BY tier, service
+```
+
+---
+
+## How Agents Coordinate
+
+In Incident Commander, **agents never call each other via direct APIs, RPCs, or in-memory message queues**. Instead, coordination is entirely decoupled through FalkorDB:
+1. **Detector** groups alerts via Cypher WCC, creates the `Incident` node, and creates an `analyze` `Task` node assigned to `Analyzer`.
+2. **Analyzer** queries pending `Task` nodes, investigates upstream changes and blast radius, records `Finding` nodes with `EVIDENCE` edges to concrete graph entities, and updates the task status to `handed_off` targeting `Responder` with reason: `"origin identified: currency"`.
+3. **Responder** queries its assigned tasks, executes `similar_incidents` and `best_playbook`, calculates the composite score, records a recommendation `Finding`, drafts a status report, and marks its task `done`.
+4. **Learner** executes on human feedback (`POST /incidents/{id}/resolve`): runs an atomic Cypher query updating the incident status and playbook win/loss counters, and writes a `learn` `Task` and `Finding` with evidence links.
+
+Every step leaves an immutable audit trail in FalkorDB.
+
+---
+
+## Local Setup (Tested PowerShell Commands)
+
+Follow these exact steps in Windows PowerShell from the project root:
+
+```powershell
+# 1. Start FalkorDB container with append-only persistence
+docker compose up -d
+
+# 2. Activate Python virtual environment and install dependencies
+# (Assumes venv at python-envs\incident-commander or create a new .venv)
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-cp .env.example .env            # Windows: Copy-Item .env.example .env
 
-python scripts/seed.py --tenant acme --reset                          # 40 services, 8 teams, 30 incidents, 15 playbooks
-python scripts/seed.py --tenant globex --seed 2 --no-plant --reset    # a second, isolated tenant
-python scripts/check_queries.py --tenant acme                         # run every query against the database
+# 3. Create .env configuration
+Copy-Item .env.example .env
 
-python -m uvicorn src.ic.api:app --host 127.0.0.1 --port 8000         # API, docs at http://127.0.0.1:8000/docs
-cd frontend && npm install && npm run dev                             # dashboard at http://localhost:5173
-python -m unittest discover -s tests -v                               # offline tests, no database needed
+# 4. Seed isolated tenant graphs (synthetic deterministic datasets)
+python scripts\seed.py --tenant acme --reset
+python scripts\seed.py --tenant globex --seed 2 --no-plant --reset
+
+# 5. Verify all Cypher queries against live FalkorDB
+python scripts\check_queries.py --tenant acme
+
+# 6. Run offline test suite (55 tests)
+python -m unittest discover -s tests -v
+
+# 7. Start FastAPI Backend Server (Port 8000)
+python -m uvicorn src.ic.api:app --host 127.0.0.1 --port 8000
+
+# 8. Start Frontend React Dashboard (Port 5173 in a new terminal)
+cd frontend
+npm install
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-All demo data is synthetic and regenerated from a seed, so after any database reset just run the two
-`seed.py` commands again. The compose file turns on append-only persistence so data survives restarts.
+- **Dashboard:** http://localhost:5173
+- **FastAPI Swagger Docs:** http://localhost:8000/docs
+- **FalkorDB Browser:** http://localhost:3001
 
-## Run the agents
+---
 
-From the dashboard, or from the command line:
+## Demo Walkthrough
 
-```bash
-python scripts/inject_incident.py --tenant acme     # a bad config change on currency plus 4 alerts
-python scripts/run_pipeline.py --tenant acme --no-llm
-python scripts/run_pipeline.py --tenant acme --resolve INC-<id>   # Learner records the outcome
-python scripts/repro_resolve.py --tenant acme --list              # try a resolve on a throwaway copy
-```
+1. **Open Dashboard:** Navigate to `http://localhost:5173`. Notice tenant switch (`tenant_acme`), API health badge, and synthetic data banner.
+2. **Inject Scenario:** Click **"Inject Demo Incident"** to simulate a faulty configuration change on `currency` and four cascading alerts on `checkout`, `cart`, `frontend`, and `payment`.
+3. **Run Pipeline:** Click **"Run Agent Pipeline"**. Watch Detector group the alerts into `INC-...`, Analyzer trace the cause to `currency` and calculate the 11-service blast radius, and Responder recommend `rollback-pool-config` (`PB-04`) and page Priya Raman.
+4. **Explore Interactive Graph:** View the Cytoscape topology. Click **"Highlight Explain Path"** to trace the shortest path from alerting nodes to `currency`.
+5. **Inspect Evidence ("Why?" Panel):** Switch to the **"Why?" Evidence Panel**. Click on any evidence pill (`currency`, `CHG-LIVE-...`) to focus and center that node on the graph.
+6. **Inspect Agent Coordination:** Switch to **"Agent Coordination Tasks"** to see the immutable hand-off chain between Analyzer and Responder.
+7. **Simulate Operator Resolution (The Learning Money Shot):** Go to **"Memory & Response"**, confirm `PB-04` worked, and click **"Record Simulated Resolution"**. Watch the score move live (e.g., `0.800 -> 0.833`), and observe how the newly resolved incident becomes the top similar incident for subsequent incidents.
+8. **Company Brain:** Switch to the **"Company Brain (Track 3)"** tab. View knowledge single points of failure, PageRank centrality, and chokepoints. Click **"Inspect"** to open the slide-out **Service Profile Drawer** showing owning teams, on-call engineers, and dependency trees.
 
-Detector, Analyzer, Responder and Learner never call each other. Each polls the graph for
-its own `Task` nodes, does its work with the queries in `queries/`, and records every claim as a
-`Finding` with `EVIDENCE` edges to the nodes it relied on. Set `ANTHROPIC_API_KEY` (and
-`pip install anthropic`) to have a model rewrite the status update; without it a template is used.
+---
 
-Recommending a playbook is not executing it: the system only records what an operator confirms.
-The demo environment is synthetic, so no real rollback is performed.
+## Verification & Proof Results
 
-## API
+Verified against live FalkorDB and captured in `docs/VERIFICATION.md`:
+- **Offline Tests:** 55 passing unit tests (`Ran 55 tests in 0.048s: OK`).
+- **Live Query Audit:** 100% of Cypher queries in `queries/` pass against live FalkorDB (`scripts/check_queries.py`).
+- **Tenant Isolation:** `scripts/prove_isolation.py` proves injecting and resolving in `acme` creates zero changes in `globex`, and unknown tenants return 404 without creating orphan graphs.
+- **Concurrency Guards:** Simultaneous `/incidents/run` triggers return 409 Conflict for duplicate requests.
+- **Persistence:** Injected and resolved incidents survive `docker restart incident-commander-falkordb` under AOF persistence.
+- **Automated UI Suite:** Headless Playwright script (`scripts/drive_ui.py`) verified the complete UI flow and saved 7 screenshots to `docs/screenshots/`.
 
-| Endpoint | Purpose |
-| --- | --- |
-| `GET /health`, `GET /tenants` | status and tenant graphs |
-| `GET /incidents?tenant=` | incident feed read from the graph |
-| `GET /incidents/{id}?tenant=` | graph nodes and edges, findings with evidence, tasks, memory, outcome |
-| `GET /knowledge?tenant=` | knowledge single points of failure, PageRank, betweenness |
-| `GET /services/{name}?tenant=` | owner, experts, past incidents, on call |
-| `POST /incidents/run` | run Detector, Analyzer, Responder (one run per tenant at a time) |
-| `POST /incidents/{id}/resolve` | Learner: record the outcome so playbook ranking learns |
-| `POST /demo/inject` | demo only: write a bad change plus an alert burst |
+---
 
-Every request names a tenant and is answered from that tenant's own graph. Unexpected errors are
-logged with their traceback in the API terminal.
+## Limitations
 
-## Data model
+- **Synthetic Data:** All service names, alerts, team rosters, and historical incidents are synthetically generated by deterministic seeds.
+- **Simulated Outcomes:** Operator resolutions update procedural graph memory for AI learning; no real production infrastructure rollback is triggered.
+- **Optional Language Model:** Responder generates deterministic status drafts directly from graph facts. An LLM (e.g. Anthropic Claude) is purely optional for text polish and is bypassed if no API key is set.
 
-One graph per tenant (`tenant_<id>`) in a single FalkorDB instance.
+---
 
-Nodes: `Service`, `Team`, `Person`, `Change`, `Alert`, `Incident`, `Playbook`, `Agent`, `Task`, `Finding`.
+## AI Usage Disclosure
 
-| Relationship | Pattern | Properties |
-| --- | --- | --- |
-| `DEPENDS_ON` | `(Service)->(Service)` | `kind`, `criticality` |
-| `OWNS` | `(Team)->(Service)` | |
-| `MEMBER_OF` | `(Person)->(Team)` | |
-| `ON_CALL_FOR` | `(Person)->(Team)` | `starts_at`, `ends_at` |
-| `MODIFIED` | `(Change)->(Service)` | |
-| `FIRED_ON` | `(Alert)->(Service)` | |
-| `PART_OF` | `(Alert)->(Incident)` | |
-| `RELATED_TO` | `(Alert)->(Alert)` | |
-| `AFFECTED` | `(Incident)->(Service)` | `role` (origin, impacted) |
-| `CAUSED_BY` | `(Incident)->(Change)` | |
-| `RESOLVED` | `(Person)->(Incident)` | `minutes` |
-| `FIXED_BY` | `(Incident)->(Playbook)` | `worked`, `minutes` |
-| `APPLIES_TO` | `(Playbook)->(Service)` | |
-| `ASSIGNED`, `FOR` | `(Task)->(Agent)`, `(Task)->(Incident)` | |
-| `HANDED_OFF_TO` | `(Task)->(Agent)` | `at`, `reason` |
-| `PRODUCED`, `ABOUT` | `(Agent)->(Finding)`, `(Finding)->(Incident)` | |
-| `EVIDENCE` | `(Finding)->(any node)` | |
+This project was built with AI coding assistance adhering strictly to Graph Hacks Rule 11. Full disclosures regarding prompts, models, and author verification are documented in [AI_USAGE.md](file:///T:/Agent%20WMD%202/incident-commander/AI_USAGE.md).
 
-Memory types: semantic = services, teams, people; episodic = incidents, alerts, changes;
-procedural = playbooks with `successes` and `failures` counters that change after every
-incident; coordination = tasks, findings, handoffs.
+---
 
-## Queries
+## Demo Video
 
-Every query the product runs is a file in [`queries/`](queries/), loaded by `src/ic/queries.py`.
-Algorithms used: PageRank, shortest path, betweenness, weakly connected components.
+- **Video Link:** [DEMO VIDEO LINK PLACEHOLDER - To be recorded by author using docs/DEMO_SCRIPT.md]
 
-## Data
+---
 
-All data is synthetic. Service names follow the public OpenTelemetry demo application;
-everything else is invented. See `src/ic/seed/`.
+## License
+
+MIT License. Copyright (c) 2026 Thiru Mughil Senthur R.
