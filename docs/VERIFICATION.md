@@ -186,6 +186,20 @@ Adapted from Framer module `https://framer.com/m/CTA-Action-Button-1k1d0J.js@161
   - **Operations Dashboard (`OverviewPage.tsx`):** Quick Demo cards ("1. Inject Demo Failure", "2. Run Agent Pipeline") and accordion card actions ("Inspect in 3D Graph", "Why Cypher Audit", "Set as Active Incident").
   - **3D Topology & Blast Radius (`Graph3D.tsx`):** 3D motion controls ("Orbiting", "Exp", "Highlight Explain Path", "Focus Origin", "Blast Radius", "Top-Down", "Fit View", "Fit & Expand to Full Screen").
   - **Memory & Response (`MemoryPage.tsx`):** Closed-loop resolution submission button ("Submit Resolution Feedback").
+---
 
+## 10. Framer AuroraFlow WebGL Background & Figma Salt & Pepper Palette
 
+Adapted from Framer module `https://framer.com/m/Test-pBXiEm.js@40kBe6UQV9K7rt3PbJ48`:
+- **AuroraFlow WebGL2 Component (`AuroraFlow.tsx`):**
+  - High-performance WebGL2 two-pass rendering pipeline (`FIELD_SRC` + `FINISH_SRC`).
+  - **Pass 1 (Fractal Field):** 84-layer raymarching-inspired fractal fluid simulation rendered to an offscreen floating-point texture attachment (`fieldTarget`).
+  - **Pass 2 (Finish Tonemapping & Paper Grain):** Fullscreen pass applying contrast, tonemapping, and procedural Interleaved Gradient Noise (`ign()`) generating a tactile film grain texture without external assets.
+  - **Interactive Dynamics:** Full-window mouse tracking with momentum-smoothed pointer coordinates `(u_pointer)`, velocity distortion, and harmonic breathing frequency oscillation.
+  - **Responsive Scaling & Fallback:** DPR-aware resolution scaling, `ResizeObserver` lifecycle management, and graceful static fallback for WebGL-disabled environments.
+- **Figma "Salt & Pepper" Design System (`index.css` & `App.css`):**
+  - **Deep Pepper Obsidian Base:** `--pepper-bg: #07080a`, `--pepper-surface-1: #0d1017`, `--pepper-surface-2: #161b26`, `--pepper-border: rgba(255, 255, 255, 0.08)`.
+  - **Crystalline Salt Highlights:** `--salt-pure: #ffffff`, `--salt-100: #f8fafc`, `--salt-200: #e2e8f0`, `--salt-muted: #94a3b8`.
+  - **Smoky Slate Pepper Accents:** `--pepper-accent-1: #334155`, `--pepper-accent-2: #475569`, providing refined monochromatic depth.
+  - **Translucent Glassmorphic Surfaces:** Cards (`.kpi-card`, `.incident-spotlight-card`, `.incidents-feed-section`, `.why-claim-card`, `.task-card`), headers, and drawers styled with `rgba(13, 16, 23, 0.78)` backgrounds and `backdrop-filter: blur(14px)`, allowing the monochromatic salt & pepper aurora mesh to subtly flow beneath without compromising readability.
 

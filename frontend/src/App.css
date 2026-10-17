@@ -1460,18 +1460,22 @@ tr:hover td {
 }
 
 /* ==========================================================================
-   APP SHELL & LAYOUT ARCHITECTURE
+   APP SHELL & LAYOUT ARCHITECTURE (Figma Salt & Pepper Palette)
    ========================================================================== */
 .app-shell-root {
   min-height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: column;
-  background: #060b13;
-  color: #e2e8f0;
+  background: transparent;
+  color: #f1f5f9;
+  position: relative;
+  overflow-x: hidden;
 }
 
 .main-content-viewport {
+  position: relative;
+  z-index: 1;
   flex: 1;
   width: 100%;
   padding: 24px 32px 48px;
@@ -1484,13 +1488,15 @@ tr:hover td {
    ========================================================================== */
 .global-header {
   width: 100%;
-  background: #09101b;
-  border-bottom: 1px solid #1a273b;
+  background: rgba(8, 10, 14, 0.82);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: sticky;
   top: 0;
   z-index: 900;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
+
 
 .header-top-bar {
   display: flex;
@@ -2148,6 +2154,11 @@ tr:hover td {
 }
 
 /* FULLSCREEN MODE (Requested by User) */
+.main-content-viewport {
+  position: relative;
+  z-index: 10;
+}
+
 .topology-viewer-container.fullscreen-mode {
   position: fixed !important;
   top: 0 !important;
@@ -2156,10 +2167,17 @@ tr:hover td {
   bottom: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  z-index: 999999 !important;
+  z-index: 9999999 !important;
   border-radius: 0 !important;
   border: none !important;
   margin: 0 !important;
+}
+
+body:has(.topology-viewer-container.fullscreen-mode) .global-header,
+.app-shell-root:has(.topology-viewer-container.fullscreen-mode) .global-header,
+.app-shell-root:has(.topology-viewer-container.fullscreen-mode) .app-floating-nav-container,
+.app-shell-root:has(.topology-viewer-container.fullscreen-mode) .global-footer-root {
+  display: none !important;
 }
 
 .viewer-toolbar {
@@ -3565,12 +3583,15 @@ tr:hover td {
 }
 
 .kpi-card {
-  background: #0d1522;
-  border: 1px solid #1a273b;
-  border-radius: 10px;
+  background: rgba(13, 16, 23, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .kpi-header {
@@ -3660,12 +3681,14 @@ tr:hover td {
 }
 
 .incident-spotlight-card {
-  background: linear-gradient(135deg, #0d1a2d, #0b131e);
-  border: 1px solid #1e3a5f;
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(13, 17, 26, 0.82), rgba(8, 10, 14, 0.88));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
   padding: 24px;
   margin-bottom: 28px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .spotlight-top-strip {
@@ -3816,11 +3839,15 @@ tr:hover td {
 }
 
 .incidents-feed-section {
-  background: #0d1522;
-  border: 1px solid #1a273b;
-  border-radius: 10px;
+  background: rgba(12, 15, 22, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 20px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
+
 
 .feed-header-bar {
   display: flex;

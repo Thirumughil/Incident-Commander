@@ -8,6 +8,7 @@ import { WhyPage } from './pages/WhyPage'
 import { CoordinationPage } from './pages/CoordinationPage'
 import { MemoryPage } from './pages/MemoryPage'
 import { BrainPage } from './pages/BrainPage'
+import { AuroraFlow } from './components/AuroraFlow'
 import type {
   IncidentSummary,
   IncidentDetail,
@@ -324,6 +325,16 @@ export default function App() {
 
   return (
     <div className="app-shell-root">
+      {/* Framer AuroraFlow WebGL background with Salt & Pepper color palette */}
+      <AuroraFlow
+        background="#07080a"
+        color1="#f8fafc"
+        color2="#334155"
+        speed={35}
+        size={110}
+        reach={280}
+      />
+
       {/* Global Professional Header with Navigation & Incident Selector */}
       <Header
         currentRoute={currentRoute}

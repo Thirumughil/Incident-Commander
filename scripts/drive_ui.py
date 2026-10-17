@@ -89,7 +89,7 @@ def run():
                 # Exit fullscreen
                 exit_btn = page.locator("button:has-text('Exit Fullscreen')")
                 if exit_btn.is_visible():
-                    exit_btn.click()
+                    exit_btn.click(force=True)
                     time.sleep(1)
 
             # 3b. Test Interactive 3D Digital Twin (Google model-viewer mode)

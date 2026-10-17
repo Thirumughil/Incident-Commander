@@ -1,11 +1,34 @@
-
 :root {
   color-scheme: dark;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'DM Sans', Inter, system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Figma Salt & Pepper Palette Tokens */
+  --pepper-bg: #07080a;
+  --pepper-surface-1: rgba(12, 15, 21, 0.82);
+  --pepper-surface-2: rgba(18, 22, 30, 0.75);
+  --pepper-surface-solid: #0d1017;
+  --pepper-border: rgba(255, 255, 255, 0.08);
+  --pepper-border-hover: rgba(255, 255, 255, 0.16);
+  --pepper-muted: #64748b;
+  --pepper-subtle: #475569;
+
+  --salt-pure: #ffffff;
+  --salt-100: #f8fafc;
+  --salt-200: #f1f5f9;
+  --salt-300: #e2e8f0;
+  --salt-400: #cbd5e1;
+  --salt-muted: #94a3b8;
+
+  /* Semantic Accents on Salt & Pepper Base */
+  --accent-cyan: #38bdf8;
+  --accent-amber: #f59e0b;
+  --accent-emerald: #10b981;
+  --accent-crimson: #ef4444;
+  --accent-purple: #a855f7;
 }
 
 * {
@@ -15,17 +38,19 @@
 html {
   min-width: 320px;
   min-height: 100%;
-  background: #080d16;
+  background: var(--pepper-bg);
+  color: var(--salt-200);
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  background: transparent;
 }
 
 body, button, input, select, textarea {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'DM Sans', Inter, system-ui, sans-serif;
 }
 
 button {
@@ -34,13 +59,13 @@ button {
 
 button:focus-visible,
 select:focus-visible {
-  outline: 2px solid #72b3ff;
+  outline: 2px solid var(--accent-cyan);
   outline-offset: 3px;
 }
 
 ::selection {
-  color: #ffffff;
-  background: #2862b2;
+  color: #030712;
+  background: var(--salt-100);
 }
 
 ::-webkit-scrollbar {
@@ -49,14 +74,15 @@ select:focus-visible {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a111d;
+  background: #07080a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2b3b52;
+  background: #1e2430;
   border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #415876;
+  background: #334155;
 }
