@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import CytoscapeComponent from 'react-cytoscapejs'
 import type { ElementDefinition, Core } from 'cytoscape'
-import { Maximize2, Minimize2, Zap, RotateCcw, Box, Layers, Eye } from 'lucide-react'
+import {
+  Maximize2, Minimize2, Zap, RotateCcw, Box, Layers, Eye,
+  RotateCw, Sun, Compass, Sparkles, Target
+} from 'lucide-react'
 import type { IncidentDetail } from '../types'
+import { Interactive3DViewer } from './Interactive3DViewer'
 
 interface Graph3DProps {
   detail: IncidentDetail
@@ -170,11 +174,18 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [highlightExplain, setHighlightExplain] = useState(false)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d')
+  const [viewMode, setViewMode] = useState<'3d' | 'model' | '2d'>('3d')
 
-  // Keep references to controls & camera
+  // Interactive 3D Viewer enhancements (from Framer component)
+  const [autoRotate, setAutoRotate] = useState<boolean>(true)
+  const [exposure, setExposure] = useState<number>(1.1)
+  const [activePreset, setActivePreset] = useState<'origin' | 'blast' | 'top' | null>(null)
+
+  // References to controls, camera, animation loop, lights
   const controlsRef = useRef<OrbitControls | null>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
+  const ambientLightRef = useRef<THREE.AmbientLight | null>(null)
+  const pointLightRef = useRef<THREE.PointLight | null>(null)
   const animFrameRef = useRef<number | null>(null)
   const cyRef = useRef<Core | null>(null)
 
@@ -189,7 +200,64 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [isFullscreen])
 
-  // Setup Three.js 3D Scene with Progressive Motion
+  // Sync autoRotate state to OrbitControls
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.autoRotate = autoRotate
+      controlsRef.current.autoRotateSpeed = 1.0
+    }
+  }, [autoRotate])
+
+  // Sync exposure to lights
+  useEffect(() => {
+    if (ambientLightRef.current) {
+      ambientLightRef.current.intensity = 0.85 * exposure
+    }
+    if (pointLightRef.current) {
+      pointLightRef.current.intensity = 2.2 * exposure
+    }
+  }, [exposure])
+
+  // Smooth camera glide function (eased camera interpolation)
+  const glideCameraTo = useCallback((pos: [number, number, number], target: [number, number, number] = [0, 0, 0]) => {
+    if (!cameraRef.current || !controlsRef.current) return
+    const cam = cameraRef.current
+    const ctrl = controlsRef.current
+    const startPos = cam.position.clone()
+    const endPos = new THREE.Vector3(...pos)
+    const startTarget = ctrl.target.clone()
+    const endTarget = new THREE.Vector3(...target)
+    const startTime = performance.now()
+    const duration = 700
+
+    const step = (now: number) => {
+      const elapsed = now - startTime
+      const p = Math.min(1.0, elapsed / duration)
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - p, 3)
+      cam.position.lerpVectors(startPos, endPos, ease)
+      ctrl.target.lerpVectors(startTarget, endTarget, ease)
+      ctrl.update()
+      if (p < 1.0) {
+        requestAnimationFrame(step)
+      }
+    }
+    requestAnimationFrame(step)
+  }, [])
+
+  // Camera Presets
+  const handlePreset = (preset: 'origin' | 'blast' | 'top') => {
+    setActivePreset(preset)
+    if (preset === 'origin') {
+      glideCameraTo([0, 50, 160], [0, 0, 0])
+    } else if (preset === 'blast') {
+      glideCameraTo([0, 150, 360], [0, 0, 0])
+    } else if (preset === 'top') {
+      glideCameraTo([0, 380, 20], [0, 0, 0])
+    }
+  }
+
+  // Setup Three.js 3D Scene with Progressive Motion & Interactive Viewer Enhancements
   useEffect(() => {
     if (viewMode !== '3d' || !mountRef.current) return
 
@@ -200,7 +268,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
     // 1. Scene & Camera
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(0x060b13)
-    scene.fog = new THREE.FogExp2(0x060b13, 0.0018)
+    scene.fog = new THREE.FogExp2(0x060b13, 0.0016)
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 1, 2000)
     camera.position.set(0, 140, 360)
@@ -213,33 +281,52 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
     container.innerHTML = ''
     container.appendChild(renderer.domElement)
 
-    // 3. Orbit Controls
+    // 3. Orbit Controls with auto-rotate & silky damping
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.enableDamping = true
-    controls.dampingFactor = 0.05
-    controls.maxDistance = 800
+    controls.dampingFactor = 0.06
+    controls.maxDistance = 850
     controls.minDistance = 60
-    controls.autoRotate = false
+    controls.autoRotate = autoRotate
+    controls.autoRotateSpeed = 1.0
     controlsRef.current = controls
 
-    // 4. Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9)
+    // 4. Lights with Exposure integration
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85 * exposure)
     scene.add(ambientLight)
+    ambientLightRef.current = ambientLight
 
-    const pointLight = new THREE.PointLight(0x38bdf8, 2, 800)
-    pointLight.position.set(0, 100, 100)
+    const pointLight = new THREE.PointLight(0x38bdf8, 2.2 * exposure, 900)
+    pointLight.position.set(0, 120, 120)
     scene.add(pointLight)
+    pointLightRef.current = pointLight
 
-    const originLight = new THREE.PointLight(0xef4444, 3, 400)
+    const originLight = new THREE.PointLight(0xef4444, 3.2 * exposure, 500)
     originLight.position.set(0, 0, 0)
     scene.add(originLight)
+
+    // 4b. Polar Depth Plane & Ground Shadow Floor (from Interactive3DViewer shadowIntensity)
+    const gridHelper = new THREE.PolarGridHelper(260, 16, 8, 64, 0x1e293b, 0x0f172a)
+    gridHelper.position.y = -65
+    scene.add(gridHelper)
+
+    const shadowGeo = new THREE.RingGeometry(0, 52, 32)
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.7,
+      side: THREE.DoubleSide
+    })
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat)
+    shadowMesh.rotation.x = Math.PI / 2
+    shadowMesh.position.y = -64.5
+    scene.add(shadowMesh)
 
     // 5. Build 3D Node Layout with Progressive Coordinates
     const g = detail.graph
     const originName = g.origin || ''
     const alertingSet = new Set(detail.alerting || [])
 
-    // Map of target 3D positions
     interface Node3DData {
       id: string
       type: 'origin' | 'alerting' | 'change' | 'service'
@@ -331,7 +418,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
       nodeMeshes.push(mesh)
     }
 
-    // C. Alerting Nodes in Inner Shell (Radius = 90)
+    // C. Alerting Nodes in Inner Shell (Radius = 95)
     alertNodes.forEach((node, idx) => {
       const count = alertNodes.length || 1
       const theta = (idx / count) * Math.PI * 2
@@ -367,7 +454,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
       nodeMeshes.push(mesh)
     })
 
-    // D. Blast Radius / Outer Services (Shell Radius = 170 to 220)
+    // D. Blast Radius / Outer Services (Shell Radius = 160-220)
     otherNodes.forEach((node, idx) => {
       const count = otherNodes.length || 1
       const phi = Math.acos(-1 + (2 * idx) / count)
@@ -425,7 +512,6 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
       const dstData = nodeMap.get(edge.target)
       if (!srcData || !dstData) return
 
-      // Create line
       const points = [srcData.currentPos, dstData.currentPos]
       const lineGeo = new THREE.BufferGeometry().setFromPoints(points)
       const isPath = highlightExplain && (
@@ -441,7 +527,6 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
       const line = new THREE.Line(lineGeo, lineMat)
       scene.add(line)
 
-      // Moving photon particle along edge
       const curve = new THREE.CatmullRomCurve3([srcData.currentPos, dstData.currentPos])
       const pGeo = new THREE.BufferGeometry().setFromPoints([srcData.currentPos])
       const pMat = new THREE.PointsMaterial({
@@ -456,7 +541,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
       edgeList.push({ source: edge.source, target: edge.target, line, particles, curve })
     })
 
-    // 7. Raycasting for Interaction
+    // 7. Raycasting for Interaction with Smooth Focus Glide
     const raycaster = new THREE.Raycaster()
     const mouse = new THREE.Vector2(-999, -999)
 
@@ -471,9 +556,15 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
       const hits = raycaster.intersectObjects(nodeMeshes)
       if (hits.length > 0) {
         const id = hits[0].object.userData.id
+        const hitPos = hits[0].object.position
         if (id && onSelectService && hits[0].object.userData.type !== 'change') {
           onSelectService(id)
         }
+        // Smoothly glide camera focus towards clicked service
+        glideCameraTo(
+          [hitPos.x + 20, hitPos.y + 40, hitPos.z + 120],
+          [hitPos.x, hitPos.y, hitPos.z]
+        )
       }
     }
 
@@ -489,27 +580,22 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
       clock += 0.02
       controls.update()
 
-      // Progressive entrance bloom: interpolate positions
       if (entranceProgress < 1.0) {
         entranceProgress += 0.025
       }
 
       nodeMap.forEach(data => {
-        // Interpolate toward target position
         data.currentPos.lerp(data.targetPos, 0.06)
         data.mesh.position.copy(data.currentPos)
 
-        // Subtle floating / bobbing motion in 3D
         if (data.type !== 'origin') {
           data.mesh.position.y += Math.sin(clock + data.targetPos.x) * 0.25
         } else if (data.halo) {
-          // Pulse the origin ring
           const s = 1 + Math.sin(clock * 3) * 0.15
           data.halo.scale.set(s, s, s)
         }
       })
 
-      // Update edges and animated photon positions
       edgeList.forEach(edge => {
         const src = nodeMap.get(edge.source)
         const dst = nodeMap.get(edge.target)
@@ -519,7 +605,6 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
           positions.setXYZ(1, dst.mesh.position.x, dst.mesh.position.y, dst.mesh.position.z)
           positions.needsUpdate = true
 
-          // Animate photon along edge
           const t = (clock * 0.4 + (edge.line.id % 5) * 0.2) % 1.0
           const pos = new THREE.Vector3().lerpVectors(src.mesh.position, dst.mesh.position, t)
           const pAttr = edge.particles.geometry.attributes.position as THREE.BufferAttribute
@@ -528,7 +613,6 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
         }
       })
 
-      // Hover detection
       raycaster.setFromCamera(mouse, camera)
       const intersects = raycaster.intersectObjects(nodeMeshes)
       if (intersects.length > 0) {
@@ -544,7 +628,6 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
     }
     animate()
 
-    // Resize handler
     function handleResize() {
       if (!container || !renderer || !camera) return
       const w = container.clientWidth || 800
@@ -565,10 +648,11 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
         container.removeChild(renderer.domElement)
       }
     }
-  }, [detail, highlightExplain, viewMode, onSelectService])
+  }, [detail, highlightExplain, viewMode, onSelectService, glideCameraTo])
 
-  // Center & Re-fit Camera (3D or 2D)
+  // Center & Re-fit Camera (3D, Model or 2D)
   function handleResetView() {
+    setActivePreset(null)
     if (viewMode === '2d' && cyRef.current) {
       cyRef.current.fit(undefined, 80)
       if (cyRef.current.zoom() > 1.2) {
@@ -584,7 +668,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
     }
   }
 
-  // 2D Cytoscape Elements with Styled Classes & Highlighted Explain Path
+  // 2D Cytoscape Elements
   const originName = detail.graph.origin || ''
   const alertingSet = useMemo(() => new Set(detail.alerting || []), [detail.alerting])
 
@@ -638,7 +722,6 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
     return [...nodes, ...edges]
   }, [detail.graph, originName, alertingSet, highlightExplain])
 
-  // Re-run layout and clamp zoom on 2D view toggle or updates
   useEffect(() => {
     if (viewMode === '2d' && cyRef.current) {
       const cy = cyRef.current
@@ -662,6 +745,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
       {/* Viewport Controls Bar */}
       <div className="viewer-toolbar">
         <div className="viewer-left-controls">
+          {/* Mode Selector */}
           <div className="view-mode-toggle">
             <button
               type="button"
@@ -673,6 +757,15 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
             </button>
             <button
               type="button"
+              className={`mode-btn ${viewMode === 'model' ? 'active' : ''}`}
+              onClick={() => setViewMode('model')}
+              title="Interactive 3D Digital Twin using Google Model-Viewer"
+            >
+              <Sparkles size={14} color="#38bdf8" />
+              <span>Interactive 3D Twin</span>
+            </button>
+            <button
+              type="button"
               className={`mode-btn ${viewMode === '2d' ? 'active' : ''}`}
               onClick={() => setViewMode('2d')}
             >
@@ -681,17 +774,90 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
             </button>
           </div>
 
-          <button
-            type="button"
-            className={`tool-btn ${highlightExplain ? 'active' : ''}`}
-            onClick={() => setHighlightExplain(!highlightExplain)}
-          >
-            <Zap size={14} color="#f59e0b" />
-            <span>Highlight Explain Path</span>
-          </button>
+          {/* Progressive 3D Motion Controls (Inspired by Interactive3DViewer) */}
+          {viewMode === '3d' && (
+            <>
+              {/* Auto-Rotate Orbital Motion Toggle */}
+              <button
+                type="button"
+                className={`tool-btn ${autoRotate ? 'active' : ''}`}
+                onClick={() => setAutoRotate(!autoRotate)}
+                title="Toggle continuous progressive 3D orbital motion"
+              >
+                <RotateCw size={13} className={autoRotate ? 'spin-slow' : ''} />
+                <span>{autoRotate ? 'Orbiting (3D Motion)' : 'Orbit Paused'}</span>
+              </button>
+
+              {/* Exposure Control */}
+              <button
+                type="button"
+                className="tool-btn"
+                onClick={() => setExposure(prev => (prev >= 1.5 ? 0.8 : +(prev + 0.35).toFixed(1)))}
+                title="Adjust WebGL exposure & light intensity"
+              >
+                <Sun size={13} color="#f59e0b" />
+                <span>Exp: {exposure.toFixed(1)}x</span>
+              </button>
+
+              {/* Explain Path Highlight */}
+              <button
+                type="button"
+                className={`tool-btn ${highlightExplain ? 'active' : ''}`}
+                onClick={() => setHighlightExplain(!highlightExplain)}
+              >
+                <Zap size={14} color="#f59e0b" />
+                <span>Highlight Explain Path</span>
+              </button>
+            </>
+          )}
+
+          {viewMode === '2d' && (
+            <button
+              type="button"
+              className={`tool-btn ${highlightExplain ? 'active' : ''}`}
+              onClick={() => setHighlightExplain(!highlightExplain)}
+            >
+              <Zap size={14} color="#f59e0b" />
+              <span>Highlight Explain Path</span>
+            </button>
+          )}
         </div>
 
         <div className="viewer-right-controls">
+          {/* Camera Hotspot Presets in 3D Mode */}
+          {viewMode === '3d' && (
+            <div className="camera-presets-group">
+              <button
+                type="button"
+                className={`preset-pill-btn ${activePreset === 'origin' ? 'active' : ''}`}
+                onClick={() => handlePreset('origin')}
+                title="Glide camera to Focus on Root Cause Origin"
+              >
+                <Target size={12} color="#ef4444" />
+                <span>Focus Origin</span>
+              </button>
+              <button
+                type="button"
+                className={`preset-pill-btn ${activePreset === 'blast' ? 'active' : ''}`}
+                onClick={() => handlePreset('blast')}
+                title="Isometric View of Full Blast Radius"
+              >
+                <Compass size={12} color="#38bdf8" />
+                <span>Blast Radius</span>
+              </button>
+              <button
+                type="button"
+                className={`preset-pill-btn ${activePreset === 'top' ? 'active' : ''}`}
+                onClick={() => handlePreset('top')}
+                title="Top-Down Overhead Spatial Angle"
+              >
+                <Box size={12} />
+                <span>Top-Down</span>
+              </button>
+            </div>
+          )}
+
+          {/* Reset / Fit View */}
           <button
             type="button"
             className="tool-btn"
@@ -702,7 +868,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
             <span>Fit View</span>
           </button>
 
-          {/* Fullscreen Expand / Fit Button (Requested by User) */}
+          {/* Fullscreen Expand / Fit Button */}
           <button
             type="button"
             className="tool-btn expand-btn"
@@ -734,14 +900,26 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
 
       {/* Main Graph Canvas Area */}
       <div className="canvas-viewport-area">
-        {/* 3D WebGL Canvas */}
+        {/* 1. 3D WebGL Canvas */}
         <div
           ref={mountRef}
           className="threejs-canvas-wrapper"
           style={{ display: viewMode === '3d' ? 'block' : 'none', width: '100%', height: '100%' }}
         />
 
-        {/* 2D Cytoscape Planar Layout */}
+        {/* 2. Interactive 3D Model Viewer Twin (Google model-viewer adapted from Framer) */}
+        {viewMode === 'model' && (
+          <div style={{ width: '100%', height: '100%' }}>
+            <Interactive3DViewer
+              detail={detail}
+              onSelectService={onSelectService}
+              autoRotate={autoRotate}
+              exposure={exposure}
+            />
+          </div>
+        )}
+
+        {/* 3. 2D Cytoscape Planar Layout */}
         <div
           className="cytoscape-canvas-wrapper"
           style={{
@@ -793,11 +971,22 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
           <div className="legend-status-line">
             <span
               className="motion-pulse"
-              style={{ background: viewMode === '2d' ? '#10b981' : '#38bdf8' }}
+              style={{
+                background: viewMode === '2d' ? '#10b981' : (viewMode === 'model' ? '#a855f7' : '#38bdf8')
+              }}
             />
             <span style={{ fontWeight: 600, color: '#e2e8f0' }}>
-              {viewMode === '2d' ? '2D Planar Schematic (Force-Directed)' : 'Progressive 3D Force Field'}
+              {viewMode === '2d'
+                ? '2D Planar Schematic (Force-Directed)'
+                : (viewMode === 'model'
+                    ? 'Interactive 3D Digital Twin (PBR Shader)'
+                    : 'Progressive 3D Force Field (Orbital Physics)')}
             </span>
+            {viewMode === '3d' && autoRotate && (
+              <span style={{ fontSize: 10, color: '#38bdf8', marginLeft: 6, fontWeight: 500 }}>
+                [Auto-Orbit Active]
+              </span>
+            )}
           </div>
           <div className="legend-chips">
             <span className="chip origin"><span className="dot" />Origin: {detail.origin || 'None'}</span>
@@ -807,7 +996,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
           <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>
             {viewMode === '2d'
               ? 'Click node to inspect service profile • Drag nodes to reposition • Scroll to zoom'
-              : 'Drag left to rotate • Right click to pan • Scroll to zoom • Click node to inspect profile'}
+              : 'Drag left to rotate • Right click to pan • Scroll to zoom • Click node to glide & inspect'}
           </div>
         </div>
 

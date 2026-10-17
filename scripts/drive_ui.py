@@ -30,6 +30,8 @@ def run():
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(viewport={"width": 1440, "height": 900})
             page = context.new_page()
+            page.on("console", lambda msg: log(f"BROWSER [{msg.type}]: {msg.text}"))
+            page.on("pageerror", lambda err: log(f"BROWSER PAGEERROR: {err}"))
 
             # 1. Load Operations Overview
             log("1. Navigating to http://127.0.0.1:5173/#/overview ...")
@@ -66,8 +68,17 @@ def run():
                     exit_btn.click()
                     time.sleep(1)
 
-            # 3b. Test 2D Planar Layout mode
-            log("3b. Switching to 2D Planar Layout...")
+            # 3b. Test Interactive 3D Digital Twin (Google model-viewer mode)
+            log("3b. Testing Interactive 3D Digital Twin mode...")
+            twin_btn = page.locator("button:has-text('Interactive 3D Twin')")
+            if twin_btn.is_visible():
+                twin_btn.click()
+                time.sleep(2)
+                page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "2d_incident_graph_twin.png"))
+                log("Saved 2d_incident_graph_twin.png")
+
+            # 3c. Test 2D Planar Layout mode
+            log("3c. Switching to 2D Planar Layout...")
             planar_btn = page.locator("button:has-text('2D Planar Layout')")
             if planar_btn.is_visible():
                 planar_btn.click()

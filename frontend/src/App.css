@@ -2070,6 +2070,57 @@ tr:hover td {
   background: rgba(56, 189, 248, 0.22);
 }
 
+/* Camera Hotspot Presets Group */
+.camera-presets-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #09101a;
+  border: 1px solid #1e2c3f;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.preset-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #8b9bb4;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-pill-btn:hover {
+  color: #e2e8f0;
+  background: #131f30;
+}
+
+.preset-pill-btn.active {
+  background: #17283d;
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+  font-weight: 600;
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-slow {
+  animation: spinSlow 9s linear infinite;
+}
+
 .canvas-viewport-area {
   position: relative;
   width: 100%;
