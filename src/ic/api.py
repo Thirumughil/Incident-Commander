@@ -38,7 +38,7 @@ app.add_middleware(
 
 service = Service()
 
-TENANT_PATTERN = r"^[a-z][a-z0-9_]+$"
+TENANT_PATTERN = r"^[a-z][a-z0-9_]{1,31}$"
 Tenant = Annotated[str, Query(min_length=2, max_length=32, pattern=TENANT_PATTERN,
                               description="Tenant name, for example acme or globex")]
 IncidentId = Annotated[str, Path(pattern=r"^[A-Za-z0-9_.\-]{1,64}$")]
