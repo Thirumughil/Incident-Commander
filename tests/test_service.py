@@ -229,7 +229,15 @@ class ServiceTests(unittest.TestCase):
         with self.assertLogs("ic.service", level="ERROR"):
             with self.assertRaises(Unavailable) as ctx:
                 make_service(resolve_fn=raises(RuntimeError("boom"))).resolve("acme", "INC-1")
-        self.assertIn("RuntimeError: boom", str(ctx.exception))
+        with self.assertRaises(BadRequest) as ctx:
+            make_service(resolve_fn=raises(ValueError("incident INC-1 is already resolved; recording it again would double-count the playbook"))).resolve("acme", "INC-1")
+        self.assertIn("already resolved", str(ctx.exception))
+        with self.assertRaises(NotFound) as ctx:
+            make_service(resolve_fn=raises(LookupError("incident INC-1 has no identified origin yet; run the pipeline first"))).resolve("acme", "INC-1")
+        self.assertIn("no identified origin yet", str(ctx.exception))
+        with self.assertRaises(BadRequest) as ctx:
+            make_service(resolve_fn=raises(ValueError("playbook PB-99 does not apply to currency"))).resolve("acme", "INC-1")
+        self.assertIn("does not apply", str(ctx.exception))
 
     def test_resolve_passes_arguments_through(self):
         out = make_service().resolve("acme", "INC-1", playbook="PB-04", worked=False, minutes=30, person="Priya Raman")
