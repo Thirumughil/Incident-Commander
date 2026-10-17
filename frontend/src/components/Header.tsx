@@ -8,7 +8,7 @@ import type { IncidentSummary, PageRoute } from '../types'
 import { FloatingPillNavigation, type FloatingPillItem } from './FloatingPillNavigation'
 import { AnimatedPath, HEADER_STREAM_PATH, HEADER_STREAM_POINTS } from './AnimatedPath'
 import { AnimatedAccordion, type AccordionItemData } from './AnimatedAccordion'
-import { FluidButton } from './FluidButton'
+import { CTAActionButton } from './CTAActionButton'
 
 interface HeaderProps {
   currentRoute: PageRoute
@@ -386,8 +386,8 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Quick Actions powered by Framer FluidButton */}
-          <FluidButton
+          {/* Quick Actions powered by Framer CTA Action Button */}
+          <CTAActionButton
             variant="amber"
             size="sm"
             icon={<Activity size={13} />}
@@ -397,7 +397,7 @@ export const Header: React.FC<HeaderProps> = ({
             title="Inject Synthetic Microservice Failure on currency service"
           />
 
-          <FluidButton
+          <CTAActionButton
             variant="primary"
             size="sm"
             icon={<Play size={13} />}
@@ -407,13 +407,14 @@ export const Header: React.FC<HeaderProps> = ({
             title="Run Multi-Agent Pipeline (Detector -> Analyzer -> Responder)"
           />
 
-          <FluidButton
+          <CTAActionButton
             variant="glass"
             size="sm"
-            icon={<RefreshCw size={14} />}
+            icon={<RefreshCw size={13} />}
             onClick={onRefresh}
+            showArrow={false}
             title="Refresh All Graph Data"
-            style={{ padding: '6px 10px', minWidth: 32 }}
+            style={{ padding: '4px 6px' }}
           />
 
           {/* System Health Indicators */}

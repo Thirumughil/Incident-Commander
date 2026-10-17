@@ -4,7 +4,7 @@ import {
   ShieldCheck, Check, UserCheck
 } from 'lucide-react'
 import type { IncidentDetail, PageRoute } from '../types'
-import { FluidButton } from '../components/FluidButton'
+import { CTAActionButton } from '../components/CTAActionButton'
 
 interface MemoryPageProps {
   detail: IncidentDetail | null
@@ -320,7 +320,7 @@ export const MemoryPage: React.FC<MemoryPageProps> = ({
                   />
                 </div>
 
-                <FluidButton
+                <CTAActionButton
                   type="submit"
                   variant="success"
                   size="md"

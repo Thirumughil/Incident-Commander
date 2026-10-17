@@ -4161,4 +4161,25 @@ tr:hover td {
   pointer-events: none;
 }
 
+/* ==========================================================================
+   FRAMER CTA ACTION BUTTON STYLES (CTA-Action-Button-1k1d0J)
+   ========================================================================== */
+.cta-action-button-root {
+  position: relative;
+  border-radius: 33px;
+  will-change: transform, box-shadow;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.cta-action-button-root:hover .cta-action-pod svg,
+.cta-action-button-root:hover .cta-action-pod div {
+  transform: rotate(-45deg);
+}
+
+.cta-action-button-root.cta-disabled {
+  pointer-events: none;
+}
+
+
 

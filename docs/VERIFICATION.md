@@ -172,18 +172,20 @@ Adapted from Framer module `https://framer.com/m/AnimatedAccordion-yn5pTV.js@SSK
 
 ---
 
-## 9. Framer Fluid Button Integration
+## 9. Framer CTA Action Button Integration
 
-Adapted from Framer module `https://framer.com/m/Fluid-Button-TYcP.js@Zhk4D4902uwzpqUJQTaH`:
-- **Fluid Button Component (`FluidButton.tsx`):**
-  - Liquid fluid overlay (`.fluid-overlay`) that sweeps upward from the base with morphing `border-radius: 50% 50% 0 0` $\to$ `0%` using `cubic-bezier(0.4, 0, 0.2, 1)`.
-  - Dual-line label stack (`.fluid-label-stack-container`): upper text slides up and clips out, while lower contrasting text slides into view over the fluid layer.
-  - Elastic hover pulse physics (`scale: 1.04`, subtle click depress `scale: 0.97`, and radial glow box-shadow).
+Adapted from Framer module `https://framer.com/m/CTA-Action-Button-1k1d0J.js@161lnzmJC2Cg4voEQm40`:
+- **CTA Action Button Component (`CTAActionButton.tsx`):**
+  - Asymmetrical rounded pill geometry (`borderRadius: 33px`) with multi-layered subtle elevation shadows.
+  - Dedicated circular action pod (`.cta-action-pod`) with contrasting vibrant gradient fill and luminous border glow.
+  - Interactive $-45^\circ$ arrow rotation / icon spring zoom on hover via `cubic-bezier(0.175, 0.885, 0.32, 1.275)` (spring bounce).
+  - Tactile micro-states: `scale(1.03)` on hover, `scale(0.97)` on click depress, smooth text slide.
   - High-contrast, theme-tailored variants: `primary` (cyan), `amber` (demo actions), `danger` (origin focus), `success` (learning submit), `purple` (agent coordination), and `glass` (subtle utilities).
 - **Application-Wide Integrations:**
   - **Global Header (`Header.tsx`):** "Inject Demo", "Run Agents", and "Refresh" action buttons.
   - **Operations Dashboard (`OverviewPage.tsx`):** Quick Demo cards ("1. Inject Demo Failure", "2. Run Agent Pipeline") and accordion card actions ("Inspect in 3D Graph", "Why Cypher Audit", "Set as Active Incident").
   - **3D Topology & Blast Radius (`Graph3D.tsx`):** 3D motion controls ("Orbiting", "Exp", "Highlight Explain Path", "Focus Origin", "Blast Radius", "Top-Down", "Fit View", "Fit & Expand to Full Screen").
   - **Memory & Response (`MemoryPage.tsx`):** Closed-loop resolution submission button ("Submit Resolution Feedback").
+
 
 

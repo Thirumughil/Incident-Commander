@@ -7,7 +7,7 @@ import {
 import type { IncidentSummary, IncidentDetail, PageRoute } from '../types'
 import { AnimatedPath } from '../components/AnimatedPath'
 import { AnimatedAccordion, type AccordionItemData } from '../components/AnimatedAccordion'
-import { FluidButton } from '../components/FluidButton'
+import { CTAActionButton } from '../components/CTAActionButton'
 
 interface OverviewPageProps {
   incidents: IncidentSummary[]
@@ -116,7 +116,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, paddingTop: 4 }}>
-            <FluidButton
+            <CTAActionButton
               variant="glass"
               size="sm"
               icon={<Network size={12} color="#38bdf8" />}
@@ -126,7 +126,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                 onNavigate('graph')
               }}
             />
-            <FluidButton
+            <CTAActionButton
               variant="glass"
               size="sm"
               icon={<Sparkles size={12} color="#f59e0b" />}
@@ -136,7 +136,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                 onNavigate('why')
               }}
             />
-            <FluidButton
+            <CTAActionButton
               variant={isSelected ? 'primary' : 'glass'}
               size="sm"
               text={isSelected ? '✓ Active Incident' : 'Set as Active Incident'}
@@ -194,23 +194,23 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             <Play size={16} color="#f59e0b" />
           </div>
           <div className="quick-sim-buttons">
-            <FluidButton
+            <CTAActionButton
               variant="amber"
               size="sm"
               icon={<Activity size={13} />}
               text={injecting ? 'Injecting...' : '1. Inject Demo Failure'}
               onClick={onInject}
               disabled={injecting}
-              style={{ width: '100%', justifyContent: 'flex-start' }}
+              style={{ width: '100%', justifyContent: 'space-between' }}
             />
-            <FluidButton
+            <CTAActionButton
               variant="primary"
               size="sm"
               icon={<Play size={13} />}
               text={running ? 'Running Pipeline...' : '2. Run Agent Pipeline'}
               onClick={onRunAgents}
               disabled={running}
-              style={{ width: '100%', justifyContent: 'flex-start' }}
+              style={{ width: '100%', justifyContent: 'space-between' }}
             />
           </div>
         </div>

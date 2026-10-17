@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import type { IncidentDetail } from '../types'
 import { Interactive3DViewer } from './Interactive3DViewer'
-import { FluidButton } from './FluidButton'
+import { CTAActionButton } from './CTAActionButton'
 
 interface Graph3DProps {
   detail: IncidentDetail
@@ -775,11 +775,11 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
             </button>
           </div>
 
-          {/* Progressive 3D Motion Controls powered by FluidButton */}
+          {/* Progressive 3D Motion Controls powered by Framer CTA Action Button */}
           {viewMode === '3d' && (
             <>
               {/* Auto-Rotate Orbital Motion Toggle */}
-              <FluidButton
+              <CTAActionButton
                 variant={autoRotate ? 'primary' : 'glass'}
                 size="sm"
                 icon={<RotateCw size={13} className={autoRotate ? 'spin-slow' : ''} />}
@@ -789,7 +789,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
               />
 
               {/* Exposure Control */}
-              <FluidButton
+              <CTAActionButton
                 variant="glass"
                 size="sm"
                 icon={<Sun size={13} color="#f59e0b" />}
@@ -799,7 +799,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
               />
 
               {/* Explain Path Highlight */}
-              <FluidButton
+              <CTAActionButton
                 variant={highlightExplain ? 'amber' : 'glass'}
                 size="sm"
                 icon={<Zap size={14} color="#f59e0b" />}
@@ -810,7 +810,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
           )}
 
           {viewMode === '2d' && (
-            <FluidButton
+            <CTAActionButton
               variant={highlightExplain ? 'amber' : 'glass'}
               size="sm"
               icon={<Zap size={14} color="#f59e0b" />}
@@ -824,7 +824,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
           {/* Camera Hotspot Presets in 3D Mode */}
           {viewMode === '3d' && (
             <div className="camera-presets-group" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <FluidButton
+              <CTAActionButton
                 variant={activePreset === 'origin' ? 'danger' : 'glass'}
                 size="sm"
                 icon={<Target size={12} color="#ef4444" />}
@@ -832,7 +832,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
                 onClick={() => handlePreset('origin')}
                 title="Glide camera to Focus on Root Cause Origin"
               />
-              <FluidButton
+              <CTAActionButton
                 variant={activePreset === 'blast' ? 'primary' : 'glass'}
                 size="sm"
                 icon={<Compass size={12} color="#38bdf8" />}
@@ -840,7 +840,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
                 onClick={() => handlePreset('blast')}
                 title="Isometric View of Full Blast Radius"
               />
-              <FluidButton
+              <CTAActionButton
                 variant={activePreset === 'top' ? 'purple' : 'glass'}
                 size="sm"
                 icon={<Box size={12} />}
@@ -852,7 +852,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
           )}
 
           {/* Reset / Fit View */}
-          <FluidButton
+          <CTAActionButton
             variant="glass"
             size="sm"
             icon={<RotateCcw size={14} />}
@@ -862,7 +862,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
           />
 
           {/* Fullscreen Expand / Fit Button */}
-          <FluidButton
+          <CTAActionButton
             variant="primary"
             size="sm"
             icon={isFullscreen ? <Minimize2 size={15} color="#38bdf8" /> : <Maximize2 size={15} color="#38bdf8" />}
