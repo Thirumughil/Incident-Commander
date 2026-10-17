@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import type { IncidentSummary, PageRoute } from '../types'
 import { FloatingPillNavigation, type FloatingPillItem } from './FloatingPillNavigation'
+import { AnimatedPath, HEADER_STREAM_PATH, HEADER_STREAM_POINTS } from './AnimatedPath'
 
 interface HeaderProps {
   currentRoute: PageRoute
@@ -164,6 +165,34 @@ export const Header: React.FC<HeaderProps> = ({
               <span>FalkorDB :6380</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Animated Multi-Agent Neural Bus Ribbon (Framer AnimatedPath) */}
+      <div className="header-neural-stream-ribbon">
+        <div className="stream-lead-pill">
+          <span className="stream-dot-pulse" />
+          <span className="stream-lead-label">FalkorDB Multi-Agent Pipeline</span>
+        </div>
+        <div className="stream-canvas-holder">
+          <AnimatedPath
+            path={HEADER_STREAM_PATH}
+            points={HEADER_STREAM_POINTS}
+            viewWidth={1000}
+            viewHeight={40}
+            lineColor="rgba(56, 189, 248, 0.25)"
+            glowColor="#38bdf8"
+            dotSize={8}
+            speed={135}
+            strokeWidth={1.5}
+            trailLength={0.35}
+            dashLength={7}
+            gapLength={7}
+            showLabels={true}
+          />
+        </div>
+        <div className="stream-trail-pill">
+          <span className="stream-trail-status">Real-time Cypher Graph Traversal</span>
         </div>
       </div>
 

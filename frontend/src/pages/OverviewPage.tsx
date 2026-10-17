@@ -4,6 +4,7 @@ import {
   ArrowRight, Network, Sparkles, Users, Layers, Play
 } from 'lucide-react'
 import type { IncidentSummary, IncidentDetail, PageRoute } from '../types'
+import { AnimatedPath } from '../components/AnimatedPath'
 
 interface OverviewPageProps {
   incidents: IncidentSummary[]
@@ -145,8 +146,34 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
           <div className="spotlight-launchpad-row">
             <div className="launchpad-instructions">
-              <span>EXPLORE DEDICATED INCIDENT VIEWS:</span>
+              <span className="launchpad-flow-tag">INCIDENT RESOLUTION LIFECYCLE:</span>
+              <span className="launchpad-flow-sub">FalkorDB Multi-Agent Connected Graph Path</span>
             </div>
+
+            {/* Framer AnimatedPath connecting the 4 dedicated incident investigation stages */}
+            <div className="launchpad-animated-stream-wrap">
+              <AnimatedPath
+                path="M 110 18 C 240 2 340 34 460 18 C 580 2 680 34 800 18 C 920 2 1020 34 1140 18"
+                points={[
+                  { x: 110, y: 18, label: '1. 3D Topology', sublabel: 'Blast Radius', color: '#38bdf8' },
+                  { x: 460, y: 18, label: '2. Cypher Audit', sublabel: 'Grounded Evidence', color: '#f59e0b' },
+                  { x: 800, y: 18, label: '3. Agent Coordination', sublabel: 'Parallel Dispatch', color: '#a855f7' },
+                  { x: 1140, y: 18, label: '4. Memory & Learning', sublabel: 'Laplace Prior', color: '#10b981' },
+                ]}
+                viewWidth={1250}
+                viewHeight={42}
+                lineColor="rgba(56, 189, 248, 0.25)"
+                glowColor="#38bdf8"
+                dotSize={9}
+                speed={140}
+                strokeWidth={1.75}
+                trailLength={0.3}
+                dashLength={6}
+                gapLength={6}
+                showLabels={true}
+              />
+            </div>
+
             <div className="launchpad-buttons-grid">
               <button
                 type="button"
