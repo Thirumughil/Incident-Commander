@@ -4,6 +4,7 @@ import {
   Layers, BrainCircuit, Users, Network, Compass, CheckCircle2, AlertTriangle
 } from 'lucide-react'
 import type { IncidentSummary, PageRoute } from '../types'
+import { FloatingPillNavigation, type FloatingPillItem } from './FloatingPillNavigation'
 
 interface HeaderProps {
   currentRoute: PageRoute
@@ -40,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const selectedIncident = incidents.find(i => i.id === selectedIncidentId)
 
-  const navItems: Array<{ id: PageRoute; label: string; icon: React.ReactNode; badge?: string; badgeColor?: string }> = [
+  const navItems: FloatingPillItem[] = [
     { id: 'overview', label: 'Operations Feed', icon: <Compass size={15} /> },
     { id: 'graph', label: 'Incident Graph', icon: <Network size={15} />, badge: '3D Motion', badgeColor: '#38bdf8' },
     { id: 'why', label: '"Why?" Evidence', icon: <Sparkles size={15} />, badge: 'Cypher Audit', badgeColor: '#f59e0b' },
@@ -166,38 +167,14 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Bottom Bar: Dedicated Page Navigation Tabs */}
-      <nav className="header-nav-bar" aria-label="Incident Sections">
-        <div className="header-nav-list">
-          {navItems.map((item) => {
-            const isActive = currentRoute === item.id
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={`nav-tab-btn ${isActive ? 'active' : ''}`}
-                onClick={() => onNavigate(item.id)}
-              >
-                <span className="nav-tab-icon">{item.icon}</span>
-                <span className="nav-tab-label">{item.label}</span>
-                {item.badge && (
-                  <span
-                    className="nav-tab-badge"
-                    style={{
-                      borderColor: item.badgeColor ? `${item.badgeColor}55` : undefined,
-                      color: item.badgeColor || '#94a3b8',
-                      background: item.badgeColor ? `${item.badgeColor}15` : undefined,
-                    }}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-                {isActive && <div className="nav-tab-active-indicator" />}
-              </button>
-            )
-          })}
-        </div>
-      </nav>
+      {/* Bottom Bar: Framer Floating Pill Navigation */}
+      <div className="header-nav-bar-wrapper">
+        <FloatingPillNavigation
+          items={navItems}
+          activeRoute={currentRoute}
+          onNavigate={onNavigate}
+        />
+      </div>
     </header>
   )
 }
