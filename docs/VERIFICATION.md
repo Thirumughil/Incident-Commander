@@ -221,3 +221,34 @@ Adapted from Framer module `https://framer.com/m/Test-pBXiEm.js@40kBe6UQV9K7rt3P
   - **Mission Control Quick Links:** Rapid cross-section navigation with active state and hover highlights.
   - **Submission Credentials:** Solo student builder badge (Thiru Mughil Senthur R), 21/21 Cypher Queries Verified, 55/55 Tests Passing, and MIT License.
   - Verified across all routes with live screenshot [`8_salt_and_pepper_footer.png`](file:///T:/Agent%20WMD%202/incident-commander/docs/screenshots/8_salt_and_pepper_footer.png).
+
+---
+
+## 12. Interactive 3D Digital Twin Graph Definition & Architecture
+
+- **Strict Preservation Boundary:**
+  - `Progressive 3D Motion` (`Graph3D.tsx`) was left completely untouched, preserving its force-directed physics, particle orbits, and motion engine.
+  - All changes were isolated cleanly to the `Interactive 3D Digital Twin` graph component (`Interactive3DViewer.tsx`), transforming it from an incomplete placeholder into a full-fidelity architectural digital twin.
+- **Microservice Dependency Topology:**
+  - Renders the complete FalkorDB microservice graph (`detail.graph.nodes` and `detail.graph.edges`) in 3D world space.
+  - Nodes are organized into radial blast radius shells:
+    - **Origin Zone (Radius 0):** Root cause origin service with high-intensity crimson PBR material (`MeshStandardMaterial`) and dual rotating halo toruses (`TorusGeometry`).
+    - **Suspect Change Node:** Floating holographic octahedron diamond (`OctahedronGeometry`) with a luminous purple conduit beam tethering directly to the origin service.
+    - **Hop 1 Alerting Core (Radius 105):** Alerting services with amber warning halos and elevated orbital positions.
+    - **Hop 2..3+ Cascading Horizon (Radius 165..240):** Structured multi-tier shells scaled by service tier with deep blue PBR materials.
+- **Physical Directed Dependency Conduits:**
+  - Real `DEPENDS_ON` relationships rendered as physical 3D volumetric pipelines using `TubeGeometry` along 3-point `CatmullRomCurve3` parabolic arcs (`mid.y += 12`), preventing lines from intersecting or clipping central spheres.
+  - Animated energy particle pulses (`THREE.Points`) streaming continuously along each conduit curve, visualizing the direction and intensity of live traffic.
+  - Origin-to-alert explain paths highlighted with amplified amber emissive radiance and enlarged particle pulses.
+- **Anti-Aliased World-Space 3D Billboard Text Sprites:**
+  - High-DPI canvas texture sprites (`THREE.CanvasTexture` on `THREE.Sprite`) anchored directly to every node mesh (`mesh.add(sprite)`).
+  - Canvas rendered at 512x140 with crisp system typography, custom Salt & Pepper pill container, glowing border, and dual-line metadata: service ID, status role (`ROOT CAUSE ORIGIN`, `ALERT FIRING (!)`), and tier (`Tier 1/2/3`).
+  - Hierarchical world-space scale tuning (`scaleSize: [54, 14.8]` for origin, `[48, 13.2]` for alerts, `[38, 10.4]` for outer services) ensuring important nodes command visual priority without foreground outer nodes overwhelming the camera.
+  - `depthTest: false` applied so billboard text is never obscured or sliced by 3D geometry.
+- **Blast Radius Cyber-Pedestal & Telemetry HUD:**
+  - Ground pedestal cylinder at $y = -66$ with 4 concentric spatial coordinate rings demarcating blast radius hop distances (Origin Zone: 65, Hop 1: 110, Hop 2: 175, Hop 3+: 240) and contact shadow.
+  - Top controls toolbar featuring Orbiting toggle, PBR Exposure calibration (0.8x..1.6x), and smooth camera preset glides (`Focus Origin`, `Full Topology`, `Top-Down`, `Reset`).
+  - Raycaster hover detection with anchored top-left telemetry HUD card displaying service role, tier, and upstream/downstream dependency counts.
+  - Raycaster click navigation invoking `onSelectService` and smoothly gliding the camera to the target node.
+- **Verification Evidence:**
+  - Live screenshot [`2d_incident_graph_twin.png`](file:///T:/Agent%20WMD%202/incident-commander/docs/screenshots/2d_incident_graph_twin.png).
