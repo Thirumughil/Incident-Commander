@@ -1025,8 +1025,11 @@ export default function App() {
                                 className="btn-ghost"
                                 onClick={() => {
                                   cyRef.current?.elements().removeClass('focused highlighted')
-                                  cyRef.current?.fit()
-                                  cyRef.current?.center()
+                                  cyRef.current?.fit(undefined, 60)
+                                  if ((cyRef.current?.zoom() || 1) > 1.0) {
+                                    cyRef.current?.zoom(0.9)
+                                    cyRef.current?.center()
+                                  }
                                 }}
                                 title="Reset Graph Layout"
                               >
@@ -1078,17 +1081,23 @@ export default function App() {
                               elements={graphElements}
                               style={{ width: '100%', height: '100%' }}
                               stylesheet={cytoscapeStylesheet}
+                              minZoom={0.2}
+                              maxZoom={1.5}
                               layout={{
                                 name: 'cose',
                                 animate: false,
                                 fit: true,
-                                padding: 35,
-                                componentSpacing: 60,
+                                padding: 60,
+                                componentSpacing: 80,
                                 nodeRepulsion: () => 400000,
                                 idealEdgeLength: () => 100,
                               }}
                               cy={cy => {
                                 cyRef.current = cy
+                                if (cy.zoom() > 1.0) {
+                                  cy.zoom(0.9)
+                                  cy.center()
+                                }
                                 cy.on('tap', 'node', evt => {
                                   const node = evt.target
                                   const nodeId = node.id()
