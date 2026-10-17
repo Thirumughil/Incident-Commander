@@ -41,6 +41,30 @@ def run():
             page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "1_dashboard_overview.png"))
             log("Saved 1_dashboard_overview.png")
 
+            # 1b. Test Header Incident Animated Accordion Flyout
+            log("1b. Testing Header Incident Animated Accordion Flyout...")
+            inc_trigger = page.locator(".incident-accordion-trigger")
+            if inc_trigger.is_visible():
+                inc_trigger.click()
+                time.sleep(1.5)
+                page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "1b_header_incident_accordion.png"))
+                log("Saved 1b_header_incident_accordion.png")
+                # Close flyout
+                page.locator(".flyout-close-btn").first.click()
+                time.sleep(0.5)
+
+            # 1c. Test Header Tenant Animated Accordion Flyout
+            log("1c. Testing Header Tenant Animated Accordion Flyout...")
+            tenant_trigger = page.locator(".tenant-accordion-trigger")
+            if tenant_trigger.is_visible():
+                tenant_trigger.click()
+                time.sleep(1.5)
+                page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "1c_header_tenant_accordion.png"))
+                log("Saved 1c_header_tenant_accordion.png")
+                # Close flyout
+                page.locator(".flyout-close-btn").first.click()
+                time.sleep(0.5)
+
             # 2. Progressive 3D Motion Incident Graph
             log("2. Navigating to http://127.0.0.1:5173/#/graph ...")
             page.goto("http://127.0.0.1:5173/#/graph")

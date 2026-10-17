@@ -149,3 +149,24 @@ Attempting duplicate resolve on the same incident ...
 ALL TRACK 2 PROOFS PASSED COMPLETELY AGAINST LIVE FALKORDB!
 ======================================================================
 ```
+
+---
+
+## 8. UI Visual Verification & Framer Animated Accordion Integration
+
+Adapted from Framer module `https://framer.com/m/AnimatedAccordion-yn5pTV.js@SSKBON4cpOaAJQbn2HLl`:
+- **Animated Accordion Component (`AnimatedAccordion.tsx`):**
+  - Rotating dashed circular outer indicator track rotating $180^\circ$ upon toggle with `cubic-bezier(0.68, -0.55, 0.265, 1.55)`.
+  - Morphing plus-to-minus horizontal/vertical pill crossbars with smooth scale and rotation.
+  - Animated vertical gradient connector timeline between active rows.
+  - Zero-layout-shift CSS Grid `0fr` $\to$ `1fr` height expansion.
+- **Active Incident Listing (`Header.tsx` & `OverviewPage.tsx`):**
+  - Interactive header trigger showing active incident ID, title, status pill, and chevron toggle.
+  - Glassmorphic popover flyout (`.header-accordion-flyout`) displaying all active and historical FalkorDB incidents with severity tags, root origin service, recommended playbook, and dispatched SRE.
+  - Incident operations feed toggleable between Animated Accordion mode and Compact Table mode.
+- **Multi-Tenant Graph Partition Selector (`Header.tsx`):**
+  - Interactive tenant trigger and flyout displaying isolated RedisGraph keyspaces (`tenant_acme`, `tenant_globex`, `tenant_initech`).
+  - Zero-cross-tenant leakage guarantee callout with instant graph partition switching.
+- **End-to-End Walkthrough Automation (`scripts/drive_ui.py`):**
+  - All 11 verification screenshots captured to `docs/screenshots/` with exit code 0.
+
