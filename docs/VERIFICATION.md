@@ -98,3 +98,54 @@ Re-running the pipeline when open alerts have already been grouped produces `ope
 - Searched entire codebase for UTF-8 corruption sequences (`â`, `Ã`, `\uFFFD`).
 - Result: **0 corrupt characters found**.
 - All markdown and TypeScript files are properly encoded as UTF-8.
+
+---
+
+## 7. Track 2 Proofs (Live Isolation, Concurrency, Coordination, Learning)
+
+Executed via `python scripts/prove_isolation.py`:
+
+```
+======================================================================
+INCIDENT COMMANDER: TRACK 2 PROOFS (LIVE EXECUTION)
+======================================================================
+
+--- 1. PROVING TENANT ISOLATION (acme vs globex) ---
+Injecting synthetic failure into tenant 'acme' ...
+Injected change CHG-LIVE-1792244138 on currency in 'acme'.
+Running agents on 'acme' ...
+Agents opened incident INC-1792244138 on 'acme'.
+Verifying tenant 'globex' graph remains strictly isolated ...
+[PASS] Querying globex for INC-1792244138 correctly returned 404 Not Found.
+[PASS] Unknown tenant returned 404 and did not create an orphan graph.
+
+--- 2. PROVING CONCURRENCY GUARDS & PER-TENANT RUN LOCK ---
+Firing two concurrent /incidents/run requests for tenant 'acme' ...
+Concurrent run responses: 200 (ok) and 409 (a pipeline run is already in progress for this tenant)
+[PASS] Concurrency lock correctly guarded execution (simultaneous runs refused with 409).
+
+--- 3. PROVING GRAPH-BASED AGENT COORDINATION CHAIN ---
+Coordination log for incident INC-1792244138:
+  • Task [TSK-bca2ad39] Agent: Analyzer   Kind: analyze  Status: handed_off -> Handed to: Responder (origin identified: currency)
+  • Task [TSK-74846b65] Agent: Responder  Kind: respond  Status: done
+
+Traceable Finding Claims with Graph Evidence (9 total):
+  • [Detector] Grouped 4 open alerts on cart, checkout, frontend, payment into one incident...
+    Evidence Nodes Linked: Alert:4, Service:4 (Query: link_related_alerts; group_alerts_wcc)
+  • [Analyzer] Probable origin is currency: change CHG-LIVE-1792244138 ('Lower DB connection pool 50 -> 10')...
+    Evidence Nodes Linked: Change:1, Service:5 (Query: suspect_changes per alerting service; pick_suspect)
+  • [Analyzer] 11 services depend on currency within 4 hops, 6 of them tier 1...
+    Evidence Nodes Linked: Service:12 (Query: blast_radius)
+  • [Analyzer] Dependency paths from the alerting services to the origin: cart -> product-catalog -> pricing -> currency...
+    Evidence Nodes Linked: Service:7 (Query: explain_path (shortestPath over DEPENDS_ON))
+
+--- 4. PROVING LEARNING FEEDBACK & DOUBLE-RESOLVE PREVENTION ---
+Resolving INC-1792244138 with simulated operator feedback ...
+[PASS] Resolved successfully. Score moved 0.857 -> 0.875
+Attempting duplicate resolve on the same incident ...
+[PASS] Duplicate resolve rejected with 400 Bad Request: incident INC-1792244138 is already resolved; recording it again would double-count the playbook
+
+======================================================================
+ALL TRACK 2 PROOFS PASSED COMPLETELY AGAINST LIVE FALKORDB!
+======================================================================
+```
