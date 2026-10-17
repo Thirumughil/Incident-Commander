@@ -66,6 +66,15 @@ def run():
                     exit_btn.click()
                     time.sleep(1)
 
+            # 3b. Test 2D Planar Layout mode
+            log("3b. Switching to 2D Planar Layout...")
+            planar_btn = page.locator("button:has-text('2D Planar Layout')")
+            if planar_btn.is_visible():
+                planar_btn.click()
+                time.sleep(2)
+                page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "2c_incident_graph_2d.png"))
+                log("Saved 2c_incident_graph_2d.png")
+
             # 4. "Why?" Evidence Panel
             log("4. Navigating to http://127.0.0.1:5173/#/why ...")
             page.goto("http://127.0.0.1:5173/#/why")

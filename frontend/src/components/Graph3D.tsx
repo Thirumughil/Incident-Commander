@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import CytoscapeComponent from 'react-cytoscapejs'
-import type { ElementDefinition } from 'cytoscape'
+import type { ElementDefinition, Core } from 'cytoscape'
 import { Maximize2, Minimize2, Zap, RotateCcw, Box, Layers, Eye } from 'lucide-react'
 import type { IncidentDetail } from '../types'
 
@@ -38,6 +38,133 @@ function createTextSprite(text: string, color = '#38bdf8', bg = 'rgba(13, 21, 34
   return sprite
 }
 
+const cytoscapeStylesheet = [
+  {
+    selector: 'node',
+    style: {
+      'label': 'data(label)',
+      'color': '#f8fafc',
+      'font-size': '11px',
+      'font-family': 'DM Sans, -apple-system, BlinkMacSystemFont, sans-serif',
+      'font-weight': 600,
+      'text-valign': 'center' as const,
+      'text-halign': 'center' as const,
+      'background-color': '#131e2e',
+      'border-width': 2,
+      'border-color': '#38bdf8',
+      'width': 68,
+      'height': 68,
+      'text-wrap': 'wrap' as const,
+      'text-max-width': '76px',
+      'text-outline-color': '#09101a',
+      'text-outline-width': 2,
+      'overlay-opacity': 0,
+    }
+  },
+  {
+    selector: 'node[type = "origin"]',
+    style: {
+      'background-color': '#7f1d1d',
+      'border-color': '#ef4444',
+      'border-width': 4,
+      'width': 84,
+      'height': 84,
+      'font-weight': 700,
+      'color': '#ffffff',
+      'font-size': '12px',
+      'text-outline-color': '#450a0a',
+      'text-outline-width': 3,
+    }
+  },
+  {
+    selector: 'node[type = "alerting"]',
+    style: {
+      'background-color': '#9a3412',
+      'border-color': '#f97316',
+      'border-width': 3,
+      'width': 76,
+      'height': 76,
+      'color': '#ffffff',
+      'font-size': '11px',
+      'text-outline-color': '#431407',
+      'text-outline-width': 2,
+    }
+  },
+  {
+    selector: 'node[type = "change"]',
+    style: {
+      'shape': 'diamond' as const,
+      'background-color': '#581c87',
+      'border-color': '#a855f7',
+      'border-width': 3,
+      'width': 80,
+      'height': 80,
+      'color': '#ffffff',
+      'font-size': '11px',
+      'text-outline-color': '#2e1065',
+      'text-outline-width': 2,
+    }
+  },
+  {
+    selector: 'node:selected, node.selected',
+    style: {
+      'border-color': '#ffffff',
+      'border-width': 4,
+      'background-color': '#0284c7',
+    }
+  },
+  {
+    selector: 'edge',
+    style: {
+      'curve-style': 'bezier' as const,
+      'target-arrow-shape': 'triangle' as const,
+      'target-arrow-color': '#64748b',
+      'line-color': '#2a3a50',
+      'width': 2,
+      'opacity': 0.85,
+      'arrow-scale': 1.1,
+    }
+  },
+  {
+    selector: 'edge[type = "change-edge"]',
+    style: {
+      'line-style': 'dashed' as const,
+      'line-color': '#c084fc',
+      'target-arrow-color': '#c084fc',
+      'width': 2.5,
+      'opacity': 0.9,
+    }
+  },
+  {
+    selector: 'edge.highlighted',
+    style: {
+      'line-color': '#f59e0b',
+      'target-arrow-color': '#f59e0b',
+      'width': 4,
+      'opacity': 1.0,
+      'z-index': 99,
+    }
+  }
+]
+
+const coseLayout = {
+  name: 'cose',
+  animate: false,
+  padding: 80,
+  componentSpacing: 140,
+  nodeRepulsion: () => 2500000,
+  nodeOverlap: 60,
+  idealEdgeLength: () => 180,
+  edgeElasticity: () => 80,
+  nestingFactor: 5,
+  gravity: 25,
+  numIter: 1000,
+  initialTemp: 200,
+  coolingFactor: 0.95,
+  minTemp: 1.0,
+  randomize: false
+}
+
 export function Graph3D({ detail, onSelectService }: Graph3DProps) {
   const mountRef = useRef<HTMLDivElement | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -49,6 +176,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
   const controlsRef = useRef<OrbitControls | null>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
   const animFrameRef = useRef<number | null>(null)
+  const cyRef = useRef<Core | null>(null)
 
   // Fullscreen Esc key handler
   useEffect(() => {
@@ -439,8 +567,16 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
     }
   }, [detail, highlightExplain, viewMode, onSelectService])
 
-  // Center & Re-fit 3D Camera
+  // Center & Re-fit Camera (3D or 2D)
   function handleResetView() {
+    if (viewMode === '2d' && cyRef.current) {
+      cyRef.current.fit(undefined, 80)
+      if (cyRef.current.zoom() > 1.2) {
+        cyRef.current.zoom(1.0)
+        cyRef.current.center()
+      }
+      return
+    }
     if (controlsRef.current && cameraRef.current) {
       controlsRef.current.reset()
       cameraRef.current.position.set(0, 140, 360)
@@ -448,30 +584,82 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
     }
   }
 
-  // 2D Cytoscape Elements (Fallback / Alternative View)
-  const cytoscapeElements: ElementDefinition[] = [
-    ...detail.graph.nodes.map(n => ({
+  // 2D Cytoscape Elements with Styled Classes & Highlighted Explain Path
+  const originName = detail.graph.origin || ''
+  const alertingSet = useMemo(() => new Set(detail.alerting || []), [detail.alerting])
+
+  const cytoscapeElements = useMemo<ElementDefinition[]>(() => {
+    const nodes: ElementDefinition[] = detail.graph.nodes.map(n => ({
       data: {
         id: n.id,
-        label: n.id === detail.graph.origin ? `${n.id} [ORIGIN]` : (n.alerting ? `${n.id} (!)` : n.id),
-        type: n.id === detail.graph.origin ? 'origin' : (n.alerting ? 'alerting' : 'service')
+        label: n.id === originName ? `${n.id}\n[ORIGIN]` : (alertingSet.has(n.id) ? `${n.id}\n(!)` : n.id),
+        type: n.id === originName ? 'origin' : (alertingSet.has(n.id) ? 'alerting' : 'service')
       }
-    })),
-    ...(detail.graph.change ? [{
-      data: {
-        id: detail.graph.change.change,
-        label: detail.graph.change.change,
-        type: 'change'
-      }
-    }] : []),
-    ...detail.graph.edges.map(e => ({
-      data: { id: `${e.source}->${e.target}`, source: e.source, target: e.target }
     }))
-  ]
+
+    if (detail.graph.change) {
+      nodes.push({
+        data: {
+          id: detail.graph.change.change,
+          label: detail.graph.change.change,
+          type: 'change'
+        }
+      })
+    }
+
+    const edges: ElementDefinition[] = detail.graph.edges.map(e => {
+      const isPath = highlightExplain && (
+        (alertingSet.has(e.source) && e.target === originName) ||
+        (e.source === originName)
+      )
+      return {
+        data: {
+          id: `${e.source}->${e.target}`,
+          source: e.source,
+          target: e.target,
+          type: 'dependency'
+        },
+        classes: isPath ? 'highlighted' : ''
+      }
+    })
+
+    if (detail.graph.change && originName) {
+      edges.push({
+        data: {
+          id: `${detail.graph.change.change}->${originName}`,
+          source: detail.graph.change.change,
+          target: originName,
+          type: 'change-edge'
+        },
+        classes: highlightExplain ? 'highlighted' : ''
+      })
+    }
+
+    return [...nodes, ...edges]
+  }, [detail.graph, originName, alertingSet, highlightExplain])
+
+  // Re-run layout and clamp zoom on 2D view toggle or updates
+  useEffect(() => {
+    if (viewMode === '2d' && cyRef.current) {
+      const cy = cyRef.current
+      const timer = setTimeout(() => {
+        cy.resize()
+        cy.layout(coseLayout).run()
+        cy.fit(undefined, 80)
+        if (cy.zoom() > 1.2) {
+          cy.zoom(1.0)
+          cy.center()
+        }
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [viewMode, isFullscreen, detail, highlightExplain])
+
+  const canvasHeight = isFullscreen ? 'calc(100vh - 54px)' : '640px'
 
   return (
     <div className={`topology-viewer-container ${isFullscreen ? 'fullscreen-mode' : ''}`}>
-      {/* 3D Viewport Controls Bar */}
+      {/* Viewport Controls Bar */}
       <div className="viewer-toolbar">
         <div className="viewer-left-controls">
           <div className="view-mode-toggle">
@@ -508,7 +696,7 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
             type="button"
             className="tool-btn"
             onClick={handleResetView}
-            title="Fit and Center 3D Camera"
+            title={viewMode === '2d' ? 'Fit and Center 2D Graph' : 'Fit and Center 3D Camera'}
           >
             <RotateCcw size={14} />
             <span>Fit View</span>
@@ -546,23 +734,70 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
 
       {/* Main Graph Canvas Area */}
       <div className="canvas-viewport-area">
-        {viewMode === '3d' ? (
-          <div ref={mountRef} className="threejs-canvas-wrapper" />
-        ) : (
-          <div style={{ width: '100%', height: '100%', background: '#070c14' }}>
-            <CytoscapeComponent
-              elements={cytoscapeElements}
-              style={{ width: '100%', height: '100%' }}
-              layout={{ name: 'cose', animate: false, padding: 50 }}
-            />
-          </div>
-        )}
+        {/* 3D WebGL Canvas */}
+        <div
+          ref={mountRef}
+          className="threejs-canvas-wrapper"
+          style={{ display: viewMode === '3d' ? 'block' : 'none', width: '100%', height: '100%' }}
+        />
 
-        {/* 3D Motion Status & Legend Pill */}
+        {/* 2D Cytoscape Planar Layout */}
+        <div
+          className="cytoscape-canvas-wrapper"
+          style={{
+            display: viewMode === '2d' ? 'block' : 'none',
+            width: '100%',
+            height: canvasHeight,
+            minHeight: canvasHeight,
+            background: '#060b13'
+          }}
+        >
+          <CytoscapeComponent
+            elements={cytoscapeElements}
+            stylesheet={cytoscapeStylesheet}
+            style={{ width: '100%', height: canvasHeight }}
+            layout={coseLayout}
+            cy={(cy) => {
+              cyRef.current = cy
+              cy.removeAllListeners()
+              cy.on('tap', 'node', (evt) => {
+                const node = evt.target
+                const type = node.data('type')
+                const id = node.data('id')
+                if (type !== 'change' && onSelectService && id) {
+                  onSelectService(id)
+                }
+              })
+              cy.on('mouseover', 'node', (evt) => {
+                const id = evt.target.data('id')
+                setHoveredNode(id)
+              })
+              cy.on('mouseout', 'node', () => {
+                setHoveredNode(null)
+              })
+              setTimeout(() => {
+                cy.resize()
+                cy.layout(coseLayout).run()
+                cy.fit(undefined, 80)
+                if (cy.zoom() > 1.2) {
+                  cy.zoom(1.0)
+                  cy.center()
+                }
+              }, 60)
+            }}
+          />
+        </div>
+
+        {/* Graph Status & Legend Pill */}
         <div className="motion-legend-card">
           <div className="legend-status-line">
-            <span className="motion-pulse" />
-            <span style={{ fontWeight: 600, color: '#e2e8f0' }}>Progressive 3D Force Field</span>
+            <span
+              className="motion-pulse"
+              style={{ background: viewMode === '2d' ? '#10b981' : '#38bdf8' }}
+            />
+            <span style={{ fontWeight: 600, color: '#e2e8f0' }}>
+              {viewMode === '2d' ? '2D Planar Schematic (Force-Directed)' : 'Progressive 3D Force Field'}
+            </span>
           </div>
           <div className="legend-chips">
             <span className="chip origin"><span className="dot" />Origin: {detail.origin || 'None'}</span>
@@ -570,7 +805,9 @@ export function Graph3D({ detail, onSelectService }: Graph3DProps) {
             <span className="chip change"><span className="dot" />Suspect Change</span>
           </div>
           <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>
-            Drag left to rotate • Right click to pan • Scroll to zoom • Click node to inspect profile
+            {viewMode === '2d'
+              ? 'Click node to inspect service profile • Drag nodes to reposition • Scroll to zoom'
+              : 'Drag left to rotate • Right click to pan • Scroll to zoom • Click node to inspect profile'}
           </div>
         </div>
 
