@@ -74,6 +74,14 @@
 - Authored `docs/DEMO_SCRIPT.md`: 3-minute timestamped script with exact clicks, narration, and on-screen metrics.
 - Authored `docs/BLOG_OUTLINE.md` for post-hackathon sharing.
 
+### Phase 9: Final Submission Polish Pass (Sun 18 Oct 2026)
+- **Task 1 (Decoy Elimination Proof):** Authored `scripts/prove_decoys.py` running on throwaway graph copy. Proved why `INC-014` ranks #1 (score: 4) over `INC-007` (score: 1) and topologically eliminates `INC-021` (origin `payment` != `currency`). Updated `MemoryPage.tsx` with live score formulas and added a Decoys section to `README.md`.
+- **Task 2 (Bi-Directional Learning Proof):** Authored `scripts/prove_learning.py`. Proved live score shift on success (`PB-04`: $0.875 \to 0.889$) and penalization on failure (`PB-05`: $0.778 \to 0.700$, demoting `PB-05` below `PB-01` in the recommendation queue). Added offline unit test verification in `tests/test_agents.py`.
+- **Task 3 (Measured Query Latency Benchmarks):** Authored `scripts/benchmark_queries.py` executing 30 timed iterations on live FalkorDB. Measured median latencies: blast radius 1.46 ms, suspect changes 0.89 ms, similar incidents 2.06 ms, best playbook 1.18 ms, who to page 1.23 ms, knowledge SPOF 1.64 ms. Added "Questions an Agent Must Answer" table to `README.md` with honest limits note.
+- **Task 4 (GitHub Quality Signals):** Created `.github/workflows/tests.yml` for automated CI, added MIT `LICENSE`, captured real Playwright screenshots (all strictly under 400 KB) in `docs/screenshots/`, and verified zero sensitive or binary files tracked in `git ls-files`.
+- **Task 5 (Demo Script Tightening & Lite Mode):** Tightened `docs/DEMO_SCRIPT.md` to exactly 180 seconds with real measured numbers and FalkorDB Browser query. Implemented `?lite=1` URL performance flag in frontend to disable WebGL shader during recording.
+- **Task 6 (Responsible Agent Safeguards):** Added `PENDING APPROVAL` state and `Approve and page (simulated)` human-in-the-loop button in `MemoryPage.tsx`. Documented responsible agent safeguards and Future Work in `README.md`.
+
 ---
 
 ## 2. Root Cause of Resolve Failure & The Fix
