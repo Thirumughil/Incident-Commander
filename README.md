@@ -249,6 +249,41 @@ EXPLICIT VERDICT: WHY INC-014 RANKS FIRST & DECOYS LOSE:
 
 ---
 
+## The Agent Learns from Failure Too
+
+Closed-loop learning must penalize failing interventions just as effectively as it rewards successful fixes. In Incident Commander, if an operator attempts a playbook that fails (`worked=False`), the Learner agent increments the failure counter in procedural graph memory. Because playbooks are scored using Laplace smoothing:
+
+$$\text{Score} = \frac{\text{Wins} + 1}{\text{Wins} + \text{Losses} + 2}$$
+
+A recorded failure immediately lowers the empirical score and can re-order the recommendation queue. Running `python scripts/prove_learning.py --tenant acme` proves this on live FalkorDB:
+
+```text
+================================================================================
+PART A: LEARNING FROM SUCCESS (Playbook PB-04 Worked)
+================================================================================
+PB-04 Before Resolve: Wins=6, Losses=0 -> Score = 0.875
+Recorded Resolution: Playbook PB-04 WORKED in 12 min (Operator: Priya Raman)
+Score Shift: 0.875 -> 0.889 (delta = +0.014)
+
+================================================================================
+PART B: LEARNING FROM FAILURE (Playbook PB-05 Failed)
+================================================================================
+Pre-Failure Rankings for 'currency':
+- PB-05 (flush-cache):          Wins=6, Losses=1 -> Score = 0.778 (Ranked #2)
+- PB-01 (rollback-last-change): Wins=12, Losses=4 -> Score = 0.722 (Ranked #3)
+
+Recording Failure: Operator tried PB-05 on currency, but it FAILED (worked=False, 25 min)
+Score Shift: 0.778 -> 0.700 (delta = -0.078)
+
+Post-Failure Rankings for 'currency':
+- PB-01 (rollback-last-change): Score = 0.722 (Promoted to Rank #2)
+- PB-05 (flush-cache):          Score = 0.700 (Demoted to Rank #4)
+
+[SUCCESS] PB-05's failure dropped its score below PB-01 (0.700 < 0.722), demoting PB-05 in the queue!
+```
+
+---
+
 ## Local Setup (Tested PowerShell Commands)
 
 Follow these exact steps in Windows PowerShell from the project root:

@@ -64,6 +64,60 @@ Resolving the incident successfully closed the feedback loop: subsequent inciden
 
 ---
 
+### 3.1 Bi-Directional Learning: The Agent Learns from Failure Too
+
+To prove that graph memory learning is truly closed-loop and bi-directional, `scripts/prove_learning.py` runs against a throwaway graph copy and tests both success and operator-recorded failure.
+
+Command:
+```powershell
+python scripts/prove_learning.py --tenant acme
+```
+
+Live Measured Output:
+```text
+================================================================================
+PART A: LEARNING FROM SUCCESS (Playbook PB-04 Worked)
+================================================================================
+1. Injected and opened Incident 1: INC-1792295046 (Origin: currency)
+2. PB-04 Before Resolve: Wins=6, Losses=0 -> Score = (6+1)/(6+0+2) = 0.875
+3. Recorded Resolution: Playbook PB-04 WORKED in 12 min (Operator: Priya Raman)
+   Score Shift: 0.875 -> 0.889 (delta = +0.014)
+   Graph Verification: Wins=7, Losses=0 -> Score = 0.889
+
+  [Similar Incidents Ranking - After Incident 1 Resolved]
+  Rank  Incident ID      Score   Overlap   Chg Caused   Playbook                 
+  ---------------------------------------------------------------------------
+  1     INC-1792295046   6       4         1            rollback-pool-config (12m)
+  2     INC-1792249047   6       4         1            rollback-pool-config (15m)
+
+================================================================================
+PART B: LEARNING FROM FAILURE (Playbook PB-05 Failed)
+================================================================================
+1. Injected and opened Incident 2: INC-1792295047 (Origin: currency)
+2. Pre-Failure Rankings for 'currency':
+   - PB-05 (flush-cache):          Wins=6, Losses=1 -> Score=0.778 (Ranked #2)
+   - PB-01 (rollback-last-change): Wins=12, Losses=4 -> Score=0.722 (Ranked #3)
+
+3. Recording Failure: Operator tried PB-05 (flush-cache) on INC-1792295047, but it FAILED (worked=False, 25 min)...
+   Score Shift: 0.778 -> 0.700 (delta = -0.078)
+
+4. Post-Failure Rankings for 'currency':
+   - PB-01 (rollback-last-change): Wins=12, Losses=4 -> Score=0.722
+   - PB-05 (flush-cache):          Wins=6, Losses=2 -> Score=0.700
+
+   Rank Order Shift:
+   - PB-01 New Rank: #2
+   - PB-05 New Rank: #4
+   [SUCCESS] PB-05's failure dropped its score below PB-01 (0.700 < 0.722), demoting PB-05 down in the recommendation queue!
+```
+
+Key Findings:
+1. `worked=True` atomically increments `wins` and raises Laplace score.
+2. `worked=False` atomically increments `losses`, drops score from `0.778 -> 0.700`, and dynamically re-orders the recommendation queue, demoting `PB-05` below `PB-01` (0.722).
+3. Offline unit tests confirm `test_learner_failure_lowers_score` asserts `losses` incremented by 1 and `wins` remained constant.
+
+---
+
 ## 4. Pipeline Idempotency (Zero Open Alerts)
 
 Command:

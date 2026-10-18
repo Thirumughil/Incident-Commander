@@ -76,11 +76,12 @@
 - **Action 4:** Highlight the green banner that appears: `PB-04: 0.800 -> 0.833`.
 - **What to Say:**  
   *"Now look at procedural memory. `rollback-pool-config` is recommended with a score of 0.800 calculated via Laplace smoothing $\frac{3+1}{3+0+2}$. When I confirm the fix worked and click 'Record Simulated Resolution', Learner executes an atomic Cypher query updating playbook wins $3 \to 4$.*  
-  *Look at the score: it immediately jumped from **0.800 to 0.833**! Furthermore, the newly resolved incident now becomes the top similar incident for any future outage on `currency`. This is machine learning directly in graph memory."*
+  *Look at the score: it immediately jumped from **0.800 to 0.833**! Furthermore, the newly resolved incident now becomes the top similar incident for any future outage on `currency`. This is machine learning directly in graph memory.*  
+  *And it learns from failure too: if an operator unchecks 'Worked', Learner increments the failure counter, immediately dropping that playbook's Laplace score and demoting it in future recommendations."*
 
 ---
 
-#### [2:20 - 2:40] Company Brain (Track 3)
+#### [2:30 - 2:45] Company Brain (Track 3)
 - **On Screen:** Click **"Company Brain (Track 3)"** in the sidebar.
 - **Action 1:** Show the 3 columns: Knowledge Single Points of Failure (SPOF), PageRank Depended-On Services, and Topological Chokepoints.
 - **Action 2:** Click **"Inspect"** on `order-service` or `currency` to slide out the **Service Profile Drawer**.
