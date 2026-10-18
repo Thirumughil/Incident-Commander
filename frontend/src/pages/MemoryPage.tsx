@@ -42,6 +42,7 @@ export const MemoryPage: React.FC<MemoryPageProps> = ({
   resolving,
   learningResult,
 }) => {
+  const [pagingApproved, setPagingApproved] = React.useState(false)
   if (!detail) {
     return (
       <div className="page-empty-state">
@@ -92,18 +93,62 @@ export const MemoryPage: React.FC<MemoryPageProps> = ({
         </div>
       </div>
 
-      {/* Paged Expert Hero Card */}
+      {/* Paged Expert Hero Card with Human Approval State */}
       {page && (
-        <div className="paged-hero-card">
-          <div className="paged-hero-avatar">
-            <UserCheck size={24} color="#38bdf8" />
+        <div className="paged-hero-card" style={{ border: pagingApproved ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(245, 158, 11, 0.4)' }}>
+          <div className="paged-hero-avatar" style={{ background: pagingApproved ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)' }}>
+            <UserCheck size={24} color={pagingApproved ? '#10b981' : '#f59e0b'} />
           </div>
           <div className="paged-hero-info">
-            <span className="paged-hero-tag">DISPATCHED ON-CALL EXPERT (RESPONDER AGENT)</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span
+                className="paged-hero-tag"
+                style={{
+                  background: pagingApproved ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                  color: pagingApproved ? '#10b981' : '#f59e0b',
+                }}
+              >
+                {pagingApproved ? 'PAGED / DISPATCHED (SIMULATED)' : 'PENDING APPROVAL'}
+              </span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                Responder Agent Recommendation
+              </span>
+            </div>
             <h3>{page.person} &bull; {page.role}</h3>
             <p>
               Team: <strong>{page.team}</strong> &bull; Slack: <code>{page.channel}</code> &bull; Historical Incident Fixes: <strong>{page.prior_fixes}</strong>
             </p>
+            {!pagingApproved ? (
+              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="approval-action-btn"
+                  style={{
+                    background: '#f59e0b',
+                    color: '#000',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 14px',
+                    fontWeight: 600,
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                  onClick={() => setPagingApproved(true)}
+                >
+                  <Check size={14} /> Approve and page (simulated)
+                </button>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>
+                  Safety guard: requires operator confirmation before dispatching on-call page
+                </span>
+              </div>
+            ) : (
+              <p style={{ fontSize: '11px', color: '#10b981', marginTop: '6px' }}>
+                &check; Approved by operator &bull; Dispatched simulated paging alert to {page.channel}
+              </p>
+            )}
           </div>
           {incident.recommended_playbook && (
             <div className="paged-hero-recommendation">
