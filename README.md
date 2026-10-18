@@ -197,6 +197,58 @@ Every step leaves an immutable audit trail in FalkorDB.
 
 ---
 
+## Why the Decoys Lose
+
+In incident response, naive symptom matching or vector similarity based solely on superficial text alerts (`"checkout slow"`, `"frontend errors"`) frequently misleads agents into choosing the wrong playbooks. In our synthetic dataset, two planted decoys test the pipeline:
+- **`INC-021` (Decoy on different service):** Superficial symptom overlap on `checkout` and `frontend`, but its true root cause was `payment`.
+- **`INC-007` (Decoy on same service):** Also caused by `currency`, but had lower overlap, was NOT caused by a configuration change, and was resolved by `PB-05` (`flush-cache`).
+
+Running `python scripts/prove_decoys.py --tenant acme` proves on live FalkorDB why `INC-014` ranks #1:
+
+```text
+Scenario Parameters:
+  Suspected Origin: currency
+  Alerting Services (4): ['cart', 'checkout', 'frontend', 'payment']
+
+Live Cypher Query Result (`queries/similar_incidents.cypher`):
+Rank  Incident     Score   Overlap   Chg Caused   Playbook                  Title
+----------------------------------------------------------------------------------------------------
+1     INC-014      4       2         1            rollback-pool-config (11m) currency latency spike, checkout slow
+2     INC-007      1       1         0            flush-cache (14m)         currency elevated error rate, cart failing
+
+Detailed Score Breakdown of Planted Incidents:
+====================================================================================================
+[INC-007] currency elevated error rate, cart failing
+  * Origin Service:        currency (Matches Suspect 'currency': True)
+  * Downstream Impacted:   ['cart']
+  * Alerting Overlap:      ['cart'] -> count = 1
+  * Causal Change:         None -> factor = +0
+  * Total Incident Score:  1 + 2*(0) = 1
+  * Historical Fix:        PB-05 (flush-cache) in 14 min (worked=True)
+----------------------------------------------------------------------------------------------------
+[INC-014] currency latency spike, checkout slow
+  * Origin Service:        currency (Matches Suspect 'currency': True)
+  * Downstream Impacted:   ['frontend', 'checkout', 'quote']
+  * Alerting Overlap:      ['checkout', 'frontend'] -> count = 2
+  * Causal Change:         CHG-0007 (config: Lower DB connection pool 50 -> 10) -> factor = +2
+  * Total Incident Score:  2 + 2*(1) = 4
+  * Historical Fix:        PB-04 (rollback-pool-config) in 11 min (worked=True)
+----------------------------------------------------------------------------------------------------
+[INC-021] payment provider timeouts, checkout slow
+  * Origin Service:        payment (Matches Suspect 'currency': False)
+  * Downstream Impacted:   ['checkout', 'frontend']
+  * Alerting Overlap:      ['checkout', 'frontend'] -> count = 2
+  * Causal Change:         None -> factor = +0
+  * Total Incident Score:  2 + 2*(0) = 2
+  * Historical Fix:        PB-10 (enable-circuit-breaker) in 19 min (worked=True)
+====================================================================================================
+EXPLICIT VERDICT: WHY INC-014 RANKS FIRST & DECOYS LOSE:
+1. INC-014 vs INC-007: Both originate on currency, but INC-014 has higher alert overlap (2 vs 1) and was triggered by a config change (+2 causality score), yielding Score 4 vs 1.
+2. INC-014 vs INC-021: Topologically eliminated because INC-021 originated on payment, not currency. Its playbook (PB-10 circuit breaker) cannot fix database pool exhaustion on currency.
+```
+
+---
+
 ## Local Setup (Tested PowerShell Commands)
 
 Follow these exact steps in Windows PowerShell from the project root:

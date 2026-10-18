@@ -49,7 +49,7 @@
 
 ---
 
-#### [1:10 - 1:50] Verifiable Evidence ("Why?" Panel) & Coordination Tasks
+#### [1:10 - 1:40] Verifiable Evidence ("Why?" Panel) & Coordination Tasks
 - **On Screen:** Click the **"Why?" Evidence Panel** tab.
 - **Action 1:** Point out the findings emitted by Detector, Analyzer, and Responder with confidence ratings (90% - 100%) and Cypher queries.
 - **Action 2:** Click the `currency` or `CHG-LIVE-...` evidence tag—watch the graph view automatically focus and zoom to that node!
@@ -60,8 +60,16 @@
 
 ---
 
-#### [1:50 - 2:20] Closed-Loop Learning (The Money Shot)
-- **On Screen:** Click **"Memory & Response"** tab.
+#### [1:40 - 2:00] Episodic Memory: Why the Decoys Lose
+- **On Screen:** Click **"Memory & Response"** tab. Scroll to **"EPISODIC MEMORY: PAST SIMILAR INCIDENT TWINS"**.
+- **Action:** Point out `INC-014` at the top with `Score: 4 (2 overlap + 2 change)` vs decoy `INC-007` (Score: 1).
+- **What to Say:**  
+  *"Notice how our episodic graph memory ranks past incidents. A naive text search would get fooled by decoy INC-021, where checkout also broke, but FalkorDB knows INC-021 was a payment failure, not currency. And against decoy INC-007 on currency, INC-014 ranks first because it shares the same configuration change causality, scoring 4 versus 1 and boosting the right playbook."*
+
+---
+
+#### [2:00 - 2:30] Closed-Loop Learning (The Money Shot)
+- **On Screen:** On **"Memory & Response"** tab, look at **"LAPLACE-SMOOTHED PLAYBOOK RANKINGS"** and the resolution form.
 - **Action 1:** Point out the recommended playbook `rollback-pool-config` (`PB-04`) with base score `0.800` (3 wins, 0 losses) and $+0.25$ similarity boost from past incident `INC-014`.
 - **Action 2:** Show the On-Call Responder paged: `Priya Raman`.
 - **Action 3:** In the Simulated Resolution form, select `rollback-pool-config`, ensure `Worked` is checked, 15 minutes, and click **"Record Simulated Resolution"**.

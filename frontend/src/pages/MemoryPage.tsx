@@ -203,21 +203,30 @@ export const MemoryPage: React.FC<MemoryPageProps> = ({
                 {similar.map((twin) => (
                   <div key={twin.incident} className="twin-item-card">
                     <div className="twin-item-left">
-                      <div className="twin-id-row">
+                      <div className="twin-id-row" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                         <span className="twin-id">{twin.incident}</span>
-                        <span className="twin-overlap-badge">
-                          {Math.round(twin.overlap * 100)}% Topology Overlap
+                        <span className="twin-overlap-badge" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
+                          Score: {twin.score} ({twin.overlap} overlap + {twin.change_caused * 2} change)
                         </span>
+                        <span className="twin-tag" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
+                          {twin.overlap} alerting overlap
+                        </span>
+                        {twin.change_caused ? (
+                          <span className="twin-tag" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>
+                            +2 config change
+                          </span>
+                        ) : null}
                       </div>
-                      <h4 className="twin-title">{twin.title}</h4>
-                      <p className="twin-sub">
-                        Triggered by change: {twin.change_caused ? 'Yes' : 'No'} &bull; Prior Resolution Time: {twin.minutes} min
+                      <h4 className="twin-title" style={{ marginTop: '6px', marginBottom: '4px' }}>{twin.title}</h4>
+                      <p className="twin-sub" style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        Fix: <strong>{twin.playbook || twin.playbook_id}</strong> &bull; Resolved in <strong>{twin.minutes} min</strong> &bull; Score Formula: <code>{twin.overlap} + 2*({twin.change_caused}) = {twin.score}</code>
                       </p>
                     </div>
 
-                    <div className="twin-item-right">
-                      <span className="twin-used-label">Playbook Used:</span>
-                      <strong className="twin-pb-name">{twin.playbook_id}</strong>
+                    <div className="twin-item-right" style={{ textAlign: 'right', minWidth: '130px' }}>
+                      <span className="twin-used-label" style={{ fontSize: '11px', color: '#64748b', display: 'block' }}>Playbook Used:</span>
+                      <strong className="twin-pb-name" style={{ color: '#38bdf8', fontSize: '13px' }}>{twin.playbook_id}</strong>
+                      <span style={{ display: 'block', fontSize: '11px', color: '#10b981', marginTop: '2px' }}>&check; Worked</span>
                     </div>
                   </div>
                 ))}
