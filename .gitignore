@@ -31,3 +31,10 @@ falkordb_data/
 *.bak
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
