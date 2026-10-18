@@ -89,6 +89,26 @@ Each tenant runs in an isolated FalkorDB graph (`tenant_<id>`). The graph models
 
 ## Key Cypher Queries
 
+### Questions an Agent Must Answer
+
+Autonomous incident response requires reasoning over interconnected topology rather than isolated logs. The table below details why each operational question requires multi-hop graph traversal, along with measured live FalkorDB query latencies (measured via `python scripts/benchmark_queries.py --tenant acme` with 1 warm-up and 30 timed iterations on Windows 10 AMD64, 2026-10-18):
+
+| Question | Why It Needs Multi-Hop Traversal | Cypher Query File | Measured Latency (Median / p95) |
+| :--- | :--- | :--- | :--- |
+| **What downstream services break if service X fails?** | Traverses reverse `DEPENDS_ON*1..4` dependency paths to identify all cascading victims ordered by tier and distance. | [`queries/blast_radius.cypher`](queries/blast_radius.cypher) | **1.46 ms** / 1.96 ms |
+| **What recent changes were deployed upstream of alerting services?** | Correlates `Change` events deployed within the last 2 hours to services reachable within `DEPENDS_ON*0..3` hops. | [`queries/suspect_changes.cypher`](queries/suspect_changes.cypher) | **0.89 ms** / 1.31 ms |
+| **What past incidents shared this root cause and cascade topology?** | Anchors on `(origin)` while calculating alert symptom overlap on `(i)-[:AFFECTED]->(s)` and change causality via `(i)-[:CAUSED_BY]->(c)`. | [`queries/similar_incidents.cypher`](queries/similar_incidents.cypher) | **2.06 ms** / 2.56 ms |
+| **Which playbook has the highest empirical win rate for this service?** | Traverses `(:Playbook)-[:APPLIES_TO]->(s)` and computes Laplace-smoothed win/loss scores from historical resolution edges. | [`queries/best_playbook.cypher`](queries/best_playbook.cypher) | **1.18 ms** / 1.74 ms |
+| **Who is on call for the owning team with the most prior outage fixes?** | Traverses `(s)<-[:OWNS]-(t)<-[:ON_CALL_FOR]-(p)` and counts historical `(p)-[:RESOLVED]->(:Incident)-[:AFFECTED]->(s)` links. | [`queries/who_to_page.cypher`](queries/who_to_page.cypher) | **1.23 ms** / 1.66 ms |
+| **Which services have an organizational bus factor of exactly 1 engineer?** | Traverses all `(s)<-[:AFFECTED]-(:Incident)<-[:RESOLVED]-(p)` and filters services where `count(DISTINCT p) == 1`. | [`queries/knowledge_spof.cypher`](queries/knowledge_spof.cypher) | **1.64 ms** / 2.22 ms |
+
+> [!NOTE]
+> **Boundary Limit:** Latencies were measured on our synthetic graph topology of 40 microservices, 77 dependencies, and 30 historical incidents; this is not a production-scale enterprise dataset.
+
+---
+
+### Cypher Query Implementations
+
 All agent reasoning executes directly against FalkorDB via parameterised Cypher queries in `queries/`:
 
 ### 1. Blast Radius (`queries/blast_radius.cypher`)
