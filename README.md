@@ -1,6 +1,21 @@
 # Incident Commander: Graph-Powered AI Incident Response Team
 
+[![CI Tests & Build](https://github.com/OWNER/REPO/actions/workflows/tests.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![FalkorDB](https://img.shields.io/badge/Graph_DB-FalkorDB-orange.svg)](https://falkordb.com/)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI_|_Python_3.11-009688.svg)](src/ic/api.py)
+[![React](https://img.shields.io/badge/Frontend-React_19_|_Vite_|_Cytoscape-61dafb.svg)](frontend/)
+
 Incident Commander is an autonomous incident response agent team whose shared brain is a FalkorDB knowledge graph. When cascading alerts fire, a multi-agent pipeline (Detector, Analyzer, Responder, Learner) traverses the service dependency topology to identify root causes, calculate blast radius, recall similar past incidents, rank proven playbooks, and page the most experienced on-call engineer—grounding every decision with verifiable graph evidence links rather than prompt hallucination, and closing the feedback loop by recording operator outcomes directly into procedural graph memory.
+
+<p align="center">
+  <img src="docs/screenshots/graph_explain_path.png" alt="Live Topology & Shortest Explain Path" width="49%" />
+  <img src="docs/screenshots/why_evidence_panel.png" alt="Verifiable Why Evidence Panel with Graph Citations" width="49%" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/memory_learning_ranking.png" alt="Continuous Learning, Decoy Filtering & Playbook Rankings" width="49%" />
+  <img src="docs/screenshots/company_brain_knowledge.png" alt="Company Brain Organizational Knowledge SPOF & Centrality" width="49%" />
+</p>
 
 ---
 
