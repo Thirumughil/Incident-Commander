@@ -104,26 +104,6 @@ Each tenant runs in an isolated FalkorDB graph (`tenant_<id>`). The graph models
 
 ## Key Cypher Queries
 
-### Questions an Agent Must Answer
-
-Autonomous incident response requires reasoning over interconnected topology rather than isolated logs. The table below details why each operational question requires multi-hop graph traversal, along with measured live FalkorDB query latencies (measured via `python scripts/benchmark_queries.py --tenant acme` with 1 warm-up and 30 timed iterations on Windows 10 AMD64, 2026-10-18):
-
-| Question | Why It Needs Multi-Hop Traversal | Cypher Query File | Measured Latency (Median / p95) |
-| :--- | :--- | :--- | :--- |
-| **What downstream services break if service X fails?** | Traverses reverse `DEPENDS_ON*1..4` dependency paths to identify all cascading victims ordered by tier and distance. | [`queries/blast_radius.cypher`](queries/blast_radius.cypher) | **1.46 ms** / 1.96 ms |
-| **What recent changes were deployed upstream of alerting services?** | Correlates `Change` events deployed within the last 2 hours to services reachable within `DEPENDS_ON*0..3` hops. | [`queries/suspect_changes.cypher`](queries/suspect_changes.cypher) | **0.89 ms** / 1.31 ms |
-| **What past incidents shared this root cause and cascade topology?** | Anchors on `(origin)` while calculating alert symptom overlap on `(i)-[:AFFECTED]->(s)` and change causality via `(i)-[:CAUSED_BY]->(c)`. | [`queries/similar_incidents.cypher`](queries/similar_incidents.cypher) | **2.06 ms** / 2.56 ms |
-| **Which playbook has the highest empirical win rate for this service?** | Traverses `(:Playbook)-[:APPLIES_TO]->(s)` and computes Laplace-smoothed win/loss scores from historical resolution edges. | [`queries/best_playbook.cypher`](queries/best_playbook.cypher) | **1.18 ms** / 1.74 ms |
-| **Who is on call for the owning team with the most prior outage fixes?** | Traverses `(s)<-[:OWNS]-(t)<-[:ON_CALL_FOR]-(p)` and counts historical `(p)-[:RESOLVED]->(:Incident)-[:AFFECTED]->(s)` links. | [`queries/who_to_page.cypher`](queries/who_to_page.cypher) | **1.23 ms** / 1.66 ms |
-| **Which services have an organizational bus factor of exactly 1 engineer?** | Traverses all `(s)<-[:AFFECTED]-(:Incident)<-[:RESOLVED]-(p)` and filters services where `count(DISTINCT p) == 1`. | [`queries/knowledge_spof.cypher`](queries/knowledge_spof.cypher) | **1.64 ms** / 2.22 ms |
-
-> [!NOTE]
-> **Boundary Limit:** Latencies were measured on our synthetic graph topology of 40 microservices, 77 dependencies, and 30 historical incidents; this is not a production-scale enterprise dataset.
-
----
-
-### Cypher Query Implementations
-
 All agent reasoning executes directly against FalkorDB via parameterised Cypher queries in `queries/`:
 
 ### 1. Blast Radius (`queries/blast_radius.cypher`)
@@ -220,15 +200,23 @@ ORDER BY tier, service
 
 ---
 
-## How Agents Coordinate
+## Questions an Agent Must Answer
 
-In Incident Commander, **agents never call each other via direct APIs, RPCs, or in-memory message queues**. Instead, coordination is entirely decoupled through FalkorDB:
-1. **Detector** groups alerts via Cypher WCC, creates the `Incident` node, and creates an `analyze` `Task` node assigned to `Analyzer`.
-2. **Analyzer** queries pending `Task` nodes, investigates upstream changes and blast radius, records `Finding` nodes with `EVIDENCE` edges to concrete graph entities, and updates the task status to `handed_off` targeting `Responder` with reason: `"origin identified: currency"`.
-3. **Responder** queries its assigned tasks, executes `similar_incidents` and `best_playbook`, calculates the composite score, records a recommendation `Finding`, drafts a status report, and marks its task `done`.
-4. **Learner** executes on human feedback (`POST /incidents/{id}/resolve`): runs an atomic Cypher query updating the incident status and playbook win/loss counters, and writes a `learn` `Task` and `Finding` with evidence links.
+Autonomous incident response requires reasoning over interconnected topology rather than isolated logs or vector similarity. The table below details why each operational question requires multi-hop graph traversal in FalkorDB:
 
-Every step leaves an immutable audit trail in FalkorDB.
+| Question | Why It Needs Multi-Hop Traversal | Cypher Query File | What the Query Returns |
+| :--- | :--- | :--- | :--- |
+| **What is the blast radius?** | Transitive downstream dependency traversal (`[:DEPENDS_ON*1..4]`) to map failing service impact. | `queries/blast_radius.cypher` | Impacted downstream service names, architectural tier, and hop distance. |
+| **What recent deployment triggered this?** | Correlates changes on origin or upstream dependencies (`[:DEPENDS_ON*0..3]`) deployed within 2 hours. | `queries/suspect_changes.cypher` | Top suspect change IDs, kind (`config`/`deploy`), summary, timestamp, and hop distance. |
+| **Which historical incidents match this failure?** | Joins past resolved incidents by origin, calculating alerting service overlap and change causality. | `queries/similar_incidents.cypher` | Top 5 similar resolved incidents, overlap count, change causality, and working playbook. |
+| **Which playbook has the highest proven win rate?** | Aggregates historical resolution edges (`APPLIES_TO`, `FIXED_BY`) and calculates Laplace score $(s+1)/(s+f+2)$. | `queries/best_playbook.cypher` | Ranked playbooks with historical wins, losses, and smoothed win probability. |
+| **Who is on-call with proven expertise?** | Navigates `(:Service)<-[:OWNS]-(:Team)<-[:ON_CALL_FOR]-(:Person)` and counts past `[:RESOLVED]` edges. | `queries/who_to_page.cypher` | Active on-call engineer name, role, team Slack channel, and prior fix count. |
+| **Which services are knowledge silos (SPOF)?** | Aggregates unique engineers who have ever resolved an outage for each service; flags count = 1. | `queries/knowledge_spof.cypher` | Critical services where exactly one person has ever fixed an outage. |
+| **Which architectural bottlenecks have highest centrality?** | Algorithmic graph centrality (PageRank and Betweenness) over service dependency topology. | `queries/pagerank.cypher` / `queries/betweenness.cypher` | Top 10 architectural chokepoints and dependency centrality rankings. |
+| **How should cascading alerts be clustered?** | Weakly Connected Components (`algo.WCC`) over temporal-topological alert relationships. | `queries/group_alerts_wcc.cypher` | Component IDs and grouped alert IDs clustered into single incidents. |
+
+> [!NOTE]
+> *Environment Note:* Evaluated on a deterministic synthetic knowledge graph of 40 services, 8 teams, 22 engineers, and 30 incidents; not production scale.
 
 ---
 
@@ -238,84 +226,51 @@ In incident response, naive symptom matching or vector similarity based solely o
 - **`INC-021` (Decoy on different service):** Superficial symptom overlap on `checkout` and `frontend`, but its true root cause was `payment`.
 - **`INC-007` (Decoy on same service):** Also caused by `currency`, but had lower overlap, was NOT caused by a configuration change, and was resolved by `PB-05` (`flush-cache`).
 
-Running `python scripts/prove_decoys.py --tenant acme` proves on live FalkorDB why `INC-014` ranks #1:
+### Real Graph Ranking (from Live Incident Query)
+As verified in `docs/VERIFICATION.md` (Section 5) via `queries/similar_incidents.cypher`:
 
-```text
-Scenario Parameters:
-  Suspected Origin: currency
-  Alerting Services (4): ['cart', 'checkout', 'frontend', 'payment']
+| Rank | Incident ID | Suspected Origin | Alerting Overlap | Caused by Change? | Composite Score | Working Playbook | Outcome |
+| :---: | :--- | :--- | :---: | :---: | :---: | :--- | :--- |
+| **#1** | **`INC-014` (True Match)** | `currency` | 1 | Yes (+2) | **3** (or 4) | `PB-04` (`rollback-pool-config`) | **Ranked #1 (Recommended)** |
+| **#2** | **`INC-007` (Decoy)** | `currency` | 1 | No (+0) | **1** | `PB-05` (`flush-cache`) | Sub-optimal |
+| **—** | **`INC-021` (Decoy)** | `payment` | — | — | **0 (Filtered Out)** | `PB-03` (`scale-out`) | **Excluded by Graph** |
 
-Live Cypher Query Result (`queries/similar_incidents.cypher`):
-Rank  Incident     Score   Overlap   Chg Caused   Playbook                  Title
-----------------------------------------------------------------------------------------------------
-1     INC-014      4       2         1            rollback-pool-config (11m) currency latency spike, checkout slow
-2     INC-007      1       1         0            flush-cache (14m)         currency elevated error rate, cart failing
-
-Detailed Score Breakdown of Planted Incidents:
-====================================================================================================
-[INC-007] currency elevated error rate, cart failing
-  * Origin Service:        currency (Matches Suspect 'currency': True)
-  * Downstream Impacted:   ['cart']
-  * Alerting Overlap:      ['cart'] -> count = 1
-  * Causal Change:         None -> factor = +0
-  * Total Incident Score:  1 + 2*(0) = 1
-  * Historical Fix:        PB-05 (flush-cache) in 14 min (worked=True)
-----------------------------------------------------------------------------------------------------
-[INC-014] currency latency spike, checkout slow
-  * Origin Service:        currency (Matches Suspect 'currency': True)
-  * Downstream Impacted:   ['frontend', 'checkout', 'quote']
-  * Alerting Overlap:      ['checkout', 'frontend'] -> count = 2
-  * Causal Change:         CHG-0007 (config: Lower DB connection pool 50 -> 10) -> factor = +2
-  * Total Incident Score:  2 + 2*(1) = 4
-  * Historical Fix:        PB-04 (rollback-pool-config) in 11 min (worked=True)
-----------------------------------------------------------------------------------------------------
-[INC-021] payment provider timeouts, checkout slow
-  * Origin Service:        payment (Matches Suspect 'currency': False)
-  * Downstream Impacted:   ['checkout', 'frontend']
-  * Alerting Overlap:      ['checkout', 'frontend'] -> count = 2
-  * Causal Change:         None -> factor = +0
-  * Total Incident Score:  2 + 2*(0) = 2
-  * Historical Fix:        PB-10 (enable-circuit-breaker) in 19 min (worked=True)
-====================================================================================================
-EXPLICIT VERDICT: WHY INC-014 RANKS FIRST & DECOYS LOSE:
-1. INC-014 vs INC-007: Both originate on currency, but INC-014 has higher alert overlap (2 vs 1) and was triggered by a config change (+2 causality score), yielding Score 4 vs 1.
-2. INC-014 vs INC-021: Topologically eliminated because INC-021 originated on payment, not currency. Its playbook (PB-10 circuit breaker) cannot fix database pool exhaustion on currency.
-```
+**Why the Graph Wins:**
+1. **`INC-021` is eliminated at query time:** Cypher matches `(i:Incident)-[:AFFECTED {role: 'origin'}]->(:Service {name: $suspect})`. Because the suspected origin for our incident is `currency`, `INC-021` is structurally filtered out without hallucinating irrelevant payment fixes.
+2. **`INC-014` beats `INC-007` via causal weighting:** The scoring formula `overlap + 2 * change_caused` prioritizes incidents caused by similar configuration changes, boosting `INC-014` over cache flushes.
 
 ---
 
-## The Agent Learns from Failure Too
+## The Agent Learns from Outcomes
 
-Closed-loop learning must penalize failing interventions just as effectively as it rewards successful fixes. In Incident Commander, if an operator attempts a playbook that fails (`worked=False`), the Learner agent increments the failure counter in procedural graph memory. Because playbooks are scored using Laplace smoothing:
+Incident Commander implements a closed-loop learning feedback mechanism directly in FalkorDB procedural memory (`Playbook.successes`, `Playbook.failures`):
 
-$$\text{Score} = \frac{\text{Wins} + 1}{\text{Wins} + \text{Losses} + 2}$$
+### Laplace-Smoothed Playbook Ranking
+Success rate is calculated via Laplace smoothing so that $1/1$ ($0.667$) does not outrank $9/10$ ($0.833$):
+$$\text{Score} = \frac{\text{successes} + 1}{\text{successes} + \text{failures} + 2}$$
 
-A recorded failure immediately lowers the empirical score and can re-order the recommendation queue. Running `python scripts/prove_learning.py --tenant acme` proves this on live FalkorDB:
+### Measured Live Learning Shift (from `docs/VERIFICATION.md` Section 5)
+When the operator confirms `PB-04` (`rollback-pool-config`) successfully mitigated incident `INC-1792243382`:
+- **Before Resolve (`PB-04` on `currency`):** Wins: 3, Losses: 0 $\to \text{Score} = \frac{3+1}{3+0+2} = \mathbf{0.800}$ (Composite: 1.050 with $+0.25$ similarity boost from `INC-014`).
+- **After Resolve (`PB-04` on `currency`):** Wins: 4, Losses: 0 $\to \text{Score} = \frac{4+1}{4+0+2} = \mathbf{0.833}$ (Composite: 1.083).
+- **Episodic Recall Shift:**
+  - Before resolve: closest match was `INC-014` (Score: 3, Overlap: 1).
+  - After resolve: top closest match dynamically became the freshly resolved live incident `INC-1792243382` (Score: 6, Overlap: 4).
 
-```text
-================================================================================
-PART A: LEARNING FROM SUCCESS (Playbook PB-04 Worked)
-================================================================================
-PB-04 Before Resolve: Wins=6, Losses=0 -> Score = 0.875
-Recorded Resolution: Playbook PB-04 WORKED in 12 min (Operator: Priya Raman)
-Score Shift: 0.875 -> 0.889 (delta = +0.014)
+> [!NOTE]
+> Failure-outcome handling (`worked=false`) is implemented in `Learner.resolve` (which penalizes the playbook score by incrementing failure counters in graph memory) and is verified by the offline unit test `test_learner_failure_lowers_score` in `tests/test_agents.py`.
 
-================================================================================
-PART B: LEARNING FROM FAILURE (Playbook PB-05 Failed)
-================================================================================
-Pre-Failure Rankings for 'currency':
-- PB-05 (flush-cache):          Wins=6, Losses=1 -> Score = 0.778 (Ranked #2)
-- PB-01 (rollback-last-change): Wins=12, Losses=4 -> Score = 0.722 (Ranked #3)
+---
 
-Recording Failure: Operator tried PB-05 on currency, but it FAILED (worked=False, 25 min)
-Score Shift: 0.778 -> 0.700 (delta = -0.078)
+## How Agents Coordinate
 
-Post-Failure Rankings for 'currency':
-- PB-01 (rollback-last-change): Score = 0.722 (Promoted to Rank #2)
-- PB-05 (flush-cache):          Score = 0.700 (Demoted to Rank #4)
+In Incident Commander, **agents never call each other via direct APIs, RPCs, or in-memory message queues**. Instead, coordination is entirely decoupled through FalkorDB:
+1. **Detector** groups alerts via Cypher WCC, creates the `Incident` node, and creates an `analyze` `Task` node assigned to `Analyzer`.
+2. **Analyzer** queries pending `Task` nodes, investigates upstream changes and blast radius, records `Finding` nodes with `EVIDENCE` edges to concrete graph entities, and updates the task status to `handed_off` targeting `Responder` with reason: `"origin identified: currency"`.
+3. **Responder** queries its assigned tasks, executes `similar_incidents` and `best_playbook`, calculates the composite score, records a recommendation `Finding`, drafts a status report, and marks its task `done`.
+4. **Learner** executes on human feedback (`POST /incidents/{id}/resolve`): runs an atomic Cypher query updating the incident status and playbook win/loss counters, and writes a `learn` `Task` and `Finding` with evidence links.
 
-[SUCCESS] PB-05's failure dropped its score below PB-01 (0.700 < 0.722), demoting PB-05 in the queue!
-```
+Every step leaves an immutable audit trail in FalkorDB.
 
 ---
 
@@ -386,29 +341,21 @@ Verified against live FalkorDB and captured in `docs/VERIFICATION.md`:
 
 ---
 
-## Responsible Agent & Human-in-the-Loop Safeguards
-
-Autonomous agents operating in production environments require strict safety rails:
-- **Human Approval for Paging:** The Responder agent computes who to page based on historical resolution data in FalkorDB, but places the action into a `PENDING APPROVAL` state. Operators must explicitly click **"Approve and page (simulated)"** before any on-call alert is dispatched.
-- **Operator-Validated Learning:** AI agents never self-reinforce erroneous assumptions; the Learner agent updates procedural win/loss counters only after an operator records the actual remediation outcome.
-- **Immutable Evidence Trails:** Every decision cites concrete graph nodes (`Service`, `Change`, `Alert`, `Incident`) via `EVIDENCE` edges, ensuring complete auditability and zero hallucinated justifications.
-
----
-
-## Future Work
-
-- **Model Context Protocol (MCP) Server:** Expose the FalkorDB tools and Cypher queries through an MCP server so external agents (Claude, Antigravity, Cursor) can query graph memory natively.
-- **Live Alert Stream Ingestion:** Ingest real-time Prometheus Alertmanager, Datadog, and PagerDuty webhooks directly into tenant graphs.
-- **Enterprise-Scale Centrality Benchmarks:** Expand graph benchmarks from 40 microservices to 10,000+ nodes across multi-cloud regions.
-- **Production Infrastructure Connectors:** Optional opt-in automated rollback triggers (e.g., ArgoCD sync or Kubernetes rollback) guarded by multi-party approval policies.
-
----
-
 ## Limitations
 
 - **Synthetic Data:** All service names, alerts, team rosters, and historical incidents are synthetically generated by deterministic seeds.
 - **Simulated Outcomes:** Operator resolutions update procedural graph memory for AI learning; no real production infrastructure rollback is triggered.
 - **Optional Language Model:** Responder generates deterministic status drafts directly from graph facts. An LLM (e.g. Anthropic Claude) is purely optional for text polish and is bypassed if no API key is set.
+
+---
+
+## Future Work (Not Built)
+
+1. **Model Context Protocol (MCP) Server:** Expose the complete suite of FalkorDB graph tools (`queries/*.cypher`) via an MCP server so any compliant agent runtime (Cursor, Claude Desktop, Antigravity) can query graph topology directly.
+2. **Live Telemetry & Alert Ingestion:** Build real-time event connectors for Prometheus Alertmanager, Datadog webhooks, OpenTelemetry traces, and PagerDuty alert webhooks.
+3. **Production Kubernetes Operator:** Implement safe infrastructure remediation operators capable of executing approved container rollbacks and autoscaling actions following explicit human confirmation.
+4. **Multi-Region & Cloud FalkorDB Clustering:** Deploy production FalkorDB instances across geographically distributed cloud clusters with automated replication.
+5. **Enterprise-Scale Centrality Benchmarks:** Evaluate Cypher PageRank and Betweenness performance across enterprise topologies exceeding 10,000 microservices.
 
 ---
 

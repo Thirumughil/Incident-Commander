@@ -88,6 +88,27 @@ export const GraphPage: React.FC<GraphPageProps> = ({
         </div>
       </div>
 
+      {/* Single-Service Incident Callout */}
+      {nodeCount === 1 && (
+        <div style={{
+          margin: '0 0 12px 0',
+          padding: '10px 16px',
+          borderRadius: '8px',
+          background: 'rgba(56, 189, 248, 0.08)',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
+          color: '#bae6fd',
+          fontSize: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <Zap size={15} color="#38bdf8" />
+          <span>
+            <strong>Isolated Root Cause ({graph.origin}):</strong> This service has no downstream dependents in FalkorDB topology (hops = 0). The alert fired directly on origin with zero cascading blast impact.
+          </span>
+        </div>
+      )}
+
       {/* Main 3D Topology Viewport */}
       <div className="graph-stage-wrapper">
         <Graph3D

@@ -456,22 +456,24 @@ export function Graph3D({ detail, onSelectService, liteMode = false }: Graph3DPr
       nodeMeshes.push(mesh)
     })
 
-    // D. Blast Radius / Outer Services (Shell Radius = 150-210)
+    // D. Blast Radius / Outer Services (Shell Radius = 140-230 arranged by causal hops)
     otherNodes.forEach((node, idx) => {
       const count = otherNodes.length || 1
       let x = 0, y = 0, z = 0
-      const radius = 150 + (node.hops || 1) * 25
-      if (count <= 4) {
+      const hops = node.hops || 1
+      const radius = 135 + hops * 30
+
+      if (count <= 6) {
         const angle = (idx / count) * Math.PI * 2 + Math.PI / 4
         x = Math.cos(angle) * radius
         z = Math.sin(angle) * radius
-        y = (idx % 2 === 0 ? 15 : -15)
+        y = (idx % 2 === 0 ? 18 : -18)
       } else {
         const phi = Math.acos(-1 + (2 * idx + 1) / count)
         const theta = Math.sqrt(count * Math.PI) * phi
         x = radius * Math.cos(theta) * Math.sin(phi)
         z = radius * Math.sin(theta) * Math.sin(phi)
-        y = radius * Math.cos(phi) * 0.65
+        y = radius * Math.cos(phi) * 0.55
       }
 
       const geo = new THREE.SphereGeometry(8, 20, 20)
@@ -530,7 +532,7 @@ export function Graph3D({ detail, onSelectService, liteMode = false }: Graph3DPr
       )
       const lineMat = new THREE.LineBasicMaterial({
         color: isPath ? 0xf59e0b : 0x475569,
-        linewidth: isPath ? 3 : 1,
+        linewidth: isPath ? 3 : 1.5,
         transparent: true,
         opacity: isPath ? 1.0 : 0.75
       })
@@ -736,7 +738,6 @@ export function Graph3D({ detail, onSelectService, liteMode = false }: Graph3DPr
     if (viewMode === '2d' && cyRef.current) {
       const cy = cyRef.current
       const timer = setTimeout(() => {
-        if (!cy || cy.destroyed()) return
         cy.resize()
         cy.layout(coseLayout).run()
         cy.fit(undefined, 80)
@@ -947,7 +948,6 @@ export function Graph3D({ detail, onSelectService, liteMode = false }: Graph3DPr
                 setHoveredNode(null)
               })
               setTimeout(() => {
-                if (!cy || cy.destroyed()) return
                 cy.resize()
                 cy.layout(coseLayout).run()
                 cy.fit(undefined, 80)

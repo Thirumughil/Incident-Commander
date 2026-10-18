@@ -120,7 +120,7 @@ export const Interactive3DViewer: React.FC<Interactive3DViewerProps> = ({
   const [currentAutoRotate, setCurrentAutoRotate] = useState<boolean>(autoRotate)
   const [currentExposure, setCurrentExposure] = useState<number>(exposure)
   const [activePreset, setActivePreset] = useState<'flow' | 'origin' | 'topdown' | 'reset'>('flow')
-  const [focusBlastOnly, setFocusBlastOnly] = useState<boolean>(true)
+  const [focusBlastOnly, setFocusBlastOnly] = useState<boolean>(false)
   const [hoveredService, setHoveredService] = useState<HoveredServiceData | null>(null)
 
   // Smooth camera glide
@@ -338,17 +338,19 @@ export const Interactive3DViewer: React.FC<Interactive3DViewerProps> = ({
     const rightHealthy = healthyList.slice(half)
 
     leftHealthy.forEach((id, idx) => {
-      const t = leftHealthy.length <= 1 ? 0 : idx / (leftHealthy.length - 1)
-      const x = -115 - t * 30
-      const z = -25 + t * 90
-      positions.set(id, new THREE.Vector3(x, 0, z))
+      const count = leftHealthy.length
+      const t = count <= 1 ? 0.5 : idx / (count - 1)
+      const x = -90 - t * 50
+      const z = -30 + t * 85
+      positions.set(id, new THREE.Vector3(x, 2, z))
     })
 
     rightHealthy.forEach((id, idx) => {
-      const t = rightHealthy.length <= 1 ? 0 : idx / (rightHealthy.length - 1)
-      const x = 115 + t * 30
-      const z = -25 + t * 90
-      positions.set(id, new THREE.Vector3(x, 0, z))
+      const count = rightHealthy.length
+      const t = count <= 1 ? 0.5 : idx / (count - 1)
+      const x = 90 + t * 50
+      const z = -30 + t * 85
+      positions.set(id, new THREE.Vector3(x, 2, z))
     })
 
     // A. Create Origin Node (Root Cause)
@@ -567,7 +569,7 @@ export const Interactive3DViewer: React.FC<Interactive3DViewerProps> = ({
         roughness: 0.3,
         metalness: 0.7,
         transparent: true,
-        opacity: isCausal ? 0.95 : (focusBlastOnly ? 0.12 : 0.35),
+        opacity: isCausal ? 0.95 : (focusBlastOnly ? 0.25 : 0.55),
       })
       const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat)
       scene.add(tubeMesh)
@@ -579,7 +581,7 @@ export const Interactive3DViewer: React.FC<Interactive3DViewerProps> = ({
         emissive: isCausal ? 0xf59e0b : 0x1e293b,
         emissiveIntensity: isCausal ? 0.85 : 0.2,
         transparent: true,
-        opacity: isCausal ? 0.95 : (focusBlastOnly ? 0.12 : 0.4),
+        opacity: isCausal ? 0.95 : (focusBlastOnly ? 0.25 : 0.6),
       })
       const arrowMesh = new THREE.Mesh(arrowGeo, arrowMat)
       const arrowPos = curve.getPoint(0.72)
