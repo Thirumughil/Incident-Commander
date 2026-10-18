@@ -69,10 +69,10 @@ In strict adherence to the Graph Freeze mandate:
 - **Status:** DONE
 - **Actions:**
   - Used `scripts/capture_key_screenshots.py` with headless Chromium to capture 4 crisp screenshots of the live running dashboard using read-only endpoints:
-    1. `docs/screenshots/graph_explain_path.png`: **273 KB** (Graph topology with highlighted shortest explain path)
-    2. `docs/screenshots/why_evidence_panel.png`: **377 KB** (Verifiable Why Evidence panel with graph citations)
-    3. `docs/screenshots/memory_learning_ranking.png`: **372 KB** (Laplace-smoothed rankings, decoy weighting, simulated resolution)
-    4. `docs/screenshots/company_brain_knowledge.png`: **355 KB** (Track 3 SPOF, PageRank centrality, and chokepoints)
+    1. `docs/screenshots/graph_explain_path.png`: **274 KB** (280,248 bytes, Graph topology with highlighted shortest explain path)
+    2. `docs/screenshots/why_evidence_panel.png`: **378 KB** (386,753 bytes, Verifiable Why Evidence panel with graph citations)
+    3. `docs/screenshots/memory_learning_ranking.png`: **373 KB** (381,802 bytes, Laplace-smoothed rankings, decoy weighting, simulated resolution)
+    4. `docs/screenshots/company_brain_knowledge.png`: **355 KB** (363,537 bytes, Track 3 SPOF, PageRank centrality, and chokepoints)
   - All screenshots are under 400 KB (strictly complying with guidelines) and are embedded near the top of `README.md`.
 
 ### Task 6: Demo Script Tightening
@@ -97,12 +97,12 @@ In strict adherence to the Graph Freeze mandate:
 
 | Metric / Value | Location in Docs | Source of Truth |
 | :--- | :--- | :--- |
-| **55 unit tests passing in 0.049s** | `README.md`, `FINAL_REPORT.md`, `POLISH_REPORT.md` | `python -m unittest discover -s tests -v` (Live command output) |
+| **55 unit tests passing in 0.048s** | `README.md`, `FINAL_REPORT.md`, `POLISH_REPORT.md` | `python -m unittest discover -s tests -v` (Live command output) |
 | **PB-04 Score: 0.800 -> 0.833** | `README.md`, `DEMO_SCRIPT.md`, `POLISH_REPORT.md` | `docs/VERIFICATION.md` Section 5; formula $\frac{3+1}{3+0+2} \to \frac{4+1}{4+0+2}$ |
 | **INC-014 Score: 3 (or 4)** | `README.md`, `POLISH_REPORT.md` | `docs/VERIFICATION.md` Section 5 (`similar_incidents.cypher` live output) |
 | **INC-007 Score: 1** | `README.md`, `POLISH_REPORT.md` | `docs/VERIFICATION.md` Section 5 (`similar_incidents.cypher` live output) |
 | **INC-021 Score: 0 (Excluded)** | `README.md`, `POLISH_REPORT.md` | `docs/VERIFICATION.md` Section 5 (Origin is `payment`, not `currency`) |
-| **Screenshot file sizes (< 400 KB)** | `README.md`, `POLISH_REPORT.md` | Filesystem byte check (`graph_explain_path`: 273 KB, `why_evidence_panel`: 377 KB, `memory_learning_ranking`: 372 KB, `company_brain_knowledge`: 355 KB) |
+| **Screenshot file sizes (< 400 KB)** | `README.md`, `POLISH_REPORT.md` | Filesystem byte check (`graph_explain_path`: 274 KB, `why_evidence_panel`: 378 KB, `memory_learning_ranking`: 373 KB, `company_brain_knowledge`: 355 KB) |
 | **Synthetic graph scale: 40 services, 8 teams, 22 people, 30 incidents** | `README.md`, `POLISH_REPORT.md` | `src/ic/seed/generator.py` and `scripts/seed.py` deterministic constants |
 
 ---
