@@ -1,6 +1,6 @@
 # Incident Commander: Graph-Powered AI Incident Response Team
 
-[![CI Tests & Build](https://github.com/OWNER/REPO/actions/workflows/tests.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/tests.yml)
+[![CI Tests & Build](https://github.com/Thirumughil/Incident-Commander/actions/workflows/tests.yml/badge.svg)](https://github.com/Thirumughil/Incident-Commander/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![FalkorDB](https://img.shields.io/badge/Graph_DB-FalkorDB-orange.svg)](https://falkordb.com/)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI_|_Python_3.11-009688.svg)](src/ic/api.py)
@@ -99,6 +99,63 @@ Each tenant runs in an isolated FalkorDB graph (`tenant_<id>`). The graph models
 - `(:Playbook)-[:APPLIES_TO]->(:Service)`
 - `(:Finding)-[:EVIDENCE]->(:Node)` (links to concrete `Service`, `Change`, `Alert`, `Incident`, `Playbook`, or `Person` nodes)
 - `(:Task)-[:HANDED_OFF_TO {reason, at}]->(:Agent)`
+
+### 3. Graph Schema & Agent Traversal Map
+
+The diagram below maps all knowledge graph nodes, relationships, and the four multi-agent query traversal paths:
+
+```mermaid
+graph TD
+    classDef semantic fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#f8fafc;
+    classDef episodic fill:#0f172a,stroke:#ef4444,stroke-width:2px,color:#f8fafc;
+    classDef procedural fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#f8fafc;
+    classDef coord fill:#0f172a,stroke:#f59e0b,stroke-width:2px,color:#f8fafc;
+
+    %% Nodes by Memory Tier
+    Service["Service<br/>(name, tier, language)"]:::semantic
+    Team["Team<br/>(name, slack_channel)"]:::semantic
+    Person["Person<br/>(name, role, oncall_now)"]:::semantic
+    
+    Alert["Alert<br/>(id, metric, severity, status)"]:::episodic
+    Incident["Incident<br/>(id, severity, status)"]:::episodic
+    Change["Change<br/>(id, kind, summary, at)"]:::episodic
+    
+    Playbook["Playbook<br/>(id, name, wins, losses)"]:::procedural
+    
+    Task["Task<br/>(task, agent, kind, status)"]:::coord
+    Finding["Finding<br/>(id, claim, confidence, query)"]:::coord
+
+    %% Semantic & Topology
+    Service -->|"DEPENDS_ON [1..4 hops]"| Service
+    Team -->|"OWNS"| Service
+    Person -->|"MEMBER_OF"| Team
+    Person -->|"ON_CALL_FOR"| Team
+    Person -->|"RESOLVED {minutes}"| Incident
+
+    %% Episodic & Incident Relationships
+    Change -->|"MODIFIED"| Service
+    Alert -->|"FIRED_ON"| Service
+    Alert -->|"PART_OF"| Incident
+    Incident -->|"AFFECTED {role: origin/impacted}"| Service
+    Incident -->|"CAUSED_BY"| Change
+    Incident -->|"FIXED_BY {worked, minutes}"| Playbook
+
+    %% Procedural & Coordination
+    Playbook -->|"APPLIES_TO"| Service
+    Task -->|"HANDED_OFF_TO"| Task
+    Finding -->|"EVIDENCE"| Service
+    Finding -->|"EVIDENCE"| Change
+    Finding -->|"EVIDENCE"| Alert
+```
+
+#### How Agents Query the Graph
+
+| Agent | Memory Tier Queried | Relationships Traversed | Key Cypher Operations | Decision Driven by Graph |
+| :--- | :--- | :--- | :--- | :--- |
+| **Detector** | Episodic + Coordination | `Alert-[:FIRED_ON]->Service`<br/>`Alert-[:RELATED_TO]->Alert` | `algo.WCC` clustering on temporal/topological proximity | Groups related cascading alerts into unified `Incident` node; writes initial `analyze` `Task`. |
+| **Analyzer** | Semantic + Episodic + Coordination | `Service-[:DEPENDS_ON*0..3]->Service`<br/>`Change-[:MODIFIED]->Service`<br/>`Service-[:DEPENDS_ON*1..4]->Service` | Multi-hop upstream correlation (`suspect_changes.cypher`) and downstream blast radius (`blast_radius.cypher`) | Determines true root-cause service (not symptom services), calculates exact impact radius, writes `Finding` with `EVIDENCE` edges. |
+| **Responder** | Episodic + Procedural + Semantic | `Incident-[:AFFECTED]->Service`<br/>`Playbook-[:APPLIES_TO]->Service`<br/>`Team-[:OWNS]->Service`<br/>`Person-[:ON_CALL_FOR]->Team` | `similar_incidents.cypher`<br/>`best_playbook.cypher`<br/>`who_to_page.cypher` | Ranks historical playbooks via Laplace score $(s+1)/(s+f+2)$; filters out decoy incidents; pages proven on-call engineer based on prior `[:RESOLVED]` count. |
+| **Learner** | Procedural + Episodic + Coordination | `Incident-[:FIXED_BY]->Playbook`<br/>`Person-[:RESOLVED]->Incident`<br/>`Finding-[:EVIDENCE]->Playbook` | Atomic counter increments (`SET pb.successes += 1`) and edge creation | Closes feedback loop by updating playbook win/loss counters directly in graph memory upon human operator resolution confirmation. |
 
 ---
 
