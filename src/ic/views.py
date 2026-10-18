@@ -26,8 +26,26 @@ def _graph(tools, origin, origin_tier, blast, alerts, cause):
         if SEVERITY_RANK.get(a["severity"], 0) >= SEVERITY_RANK.get(worst.get(a["service"]), 0):
             worst[a["service"]] = a["severity"]
 
-    names = list(dict.fromkeys(([origin] if origin else []) + sorted(worst) + [b["service"] for b in blast]))
+    neighbors = (
+        tools.service_neighbors(origin)
+        if (origin and hasattr(tools, "service_neighbors"))
+        else {"depends_on": [], "dependents": []}
+    )
+    upstream = neighbors.get("depends_on") or []
+    downstream = neighbors.get("dependents") or []
+
+    names = list(dict.fromkeys(
+        ([origin] if origin else []) + sorted(worst) + [b["service"] for b in blast] + upstream + downstream
+    ))
     names = names[:MAX_GRAPH_NODES]
+
+    for n in names:
+        if n not in hops:
+            hops[n] = 1
+        if n not in tier and hasattr(tools, "service_info"):
+            info = tools.service_info(n)
+            tier[n] = info.get("tier") if info else None
+
     nodes = [dict(id=n, tier=tier.get(n), hops=hops.get(n), alerting=n in worst, severity=worst.get(n))
              for n in names]
     edges = tools.subgraph_edges(names) if names else []
