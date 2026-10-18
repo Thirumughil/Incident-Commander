@@ -19,6 +19,7 @@ import type {
 import './App.css'
 
 const API_BASE = 'http://127.0.0.1:8000'
+const isLiteMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('lite') === '1'
 
 function parseRouteFromHash(): PageRoute {
   const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase()
@@ -325,15 +326,17 @@ export default function App() {
 
   return (
     <div className="app-shell-root">
-      {/* Framer AuroraFlow WebGL background with Salt & Pepper color palette */}
-      <AuroraFlow
-        background="#07080a"
-        color1="#f8fafc"
-        color2="#334155"
-        speed={35}
-        size={110}
-        reach={280}
-      />
+      {/* Framer AuroraFlow WebGL background (disabled when ?lite=1 is passed) */}
+      {!isLiteMode && (
+        <AuroraFlow
+          background="#07080a"
+          color1="#f8fafc"
+          color2="#334155"
+          speed={35}
+          size={110}
+          reach={280}
+        />
+      )}
 
       {/* Global Professional Header with Navigation & Incident Selector */}
       <Header
@@ -390,6 +393,7 @@ export default function App() {
             detail={incidentDetail}
             onSelectService={setSelectedService}
             onNavigate={handleNavigate}
+            liteMode={isLiteMode}
           />
         )}
 

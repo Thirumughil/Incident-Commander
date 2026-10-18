@@ -14,6 +14,7 @@ import { CTAActionButton } from './CTAActionButton'
 interface Graph3DProps {
   detail: IncidentDetail
   onSelectService?: (service: string) => void
+  liteMode?: boolean
 }
 
 function createTextSprite(text: string, color = '#38bdf8', bg = 'rgba(13, 21, 34, 0.85)') {
@@ -170,15 +171,15 @@ const coseLayout = {
   randomize: false
 }
 
-export function Graph3D({ detail, onSelectService }: Graph3DProps) {
+export function Graph3D({ detail, onSelectService, liteMode = false }: Graph3DProps) {
   const mountRef = useRef<HTMLDivElement | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [highlightExplain, setHighlightExplain] = useState(false)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'3d' | 'model' | '2d'>('3d')
+  const [viewMode, setViewMode] = useState<'3d' | 'model' | '2d'>(liteMode ? '2d' : '3d')
 
   // Interactive 3D Viewer enhancements (from Framer component)
-  const [autoRotate, setAutoRotate] = useState<boolean>(true)
+  const [autoRotate, setAutoRotate] = useState<boolean>(!liteMode)
   const [exposure, setExposure] = useState<number>(1.1)
   const [activePreset, setActivePreset] = useState<'origin' | 'blast' | 'top' | null>(null)
 

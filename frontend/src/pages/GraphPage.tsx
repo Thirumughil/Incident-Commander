@@ -10,12 +10,14 @@ interface GraphPageProps {
   detail: IncidentDetail | null
   onSelectService: (service: string) => void
   onNavigate: (route: PageRoute) => void
+  liteMode?: boolean
 }
 
 export const GraphPage: React.FC<GraphPageProps> = ({
   detail,
   onSelectService,
   onNavigate,
+  liteMode = false,
 }) => {
   if (!detail) {
     return (
@@ -91,6 +93,7 @@ export const GraphPage: React.FC<GraphPageProps> = ({
         <Graph3D
           detail={detail}
           onSelectService={onSelectService}
+          liteMode={liteMode}
         />
       </div>
 
