@@ -5,6 +5,9 @@
 **Duration:** 3 minutes (180 seconds)  
 **Target Submission:** Sun 18 Oct 2026
 
+> [!NOTE]
+> **Canonical Recording Script:** Please follow [docs/VIDEO_SCRIPT_FINAL.md](VIDEO_SCRIPT_FINAL.md) for the exact word-for-word, timed narration, click checklist, and teleprompter text.
+
 > [!IMPORTANT]
 > **Recording Note for Author:**
 > - If you experience frame drops during screen capture or 3D rendering, simply add `?lite=1` to the URL: `http://localhost:5173/?lite=1`. This automatically disables the WebGL background and pauses 3D orbital animations for silky-smooth screen recording.
